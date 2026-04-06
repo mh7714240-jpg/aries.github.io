@@ -166,56 +166,56 @@
     <iframe id="pdfViewer" class="pdf-viewer"></iframe>
   </div>
 
-  <script>
-    const files = {
-      n1: [
-        'jlpt-n1-2024-12.pdf',
-        'jlpt-n1-2024-07.pdf',
-        'jlpt-n1-2023-12.pdf',
-        'jlpt-n1-2023-07.pdf',
-        'jlpt-n1-2022-12.pdf'
-      ],
-      n2: [],
-      n3: []
-    };
+    <script>
+  const repoName = "nama-repo-kamu"; // GANTI sesuai nama repository GitHub
 
-    function openLevel(level) {
-      document.getElementById('home').style.display = 'none';
-      document.getElementById('viewerPage').style.display = 'grid';
-      document.getElementById('levelTitle').textContent = 'Bahasa Jepang ' + level.toUpperCase();
+  const files = {
+    n1: [
+      "jlpt-n1-2024-12.pdf",
+      "jlpt-n1-2024-07.pdf",
+      "jlpt-n1-2023-12.pdf",
+      "jlpt-n1-2023-07.pdf",
+      "jlpt-n1-2022-12.pdf"
+    ],
+    n2: [],
+    n3: []
+  };
 
-      const fileList = document.getElementById('fileList');
-      fileList.innerHTML = '';
+  function openLevel(level) {
+    document.getElementById("home").style.display = "none";
+    document.getElementById("viewerPage").style.display = "grid";
+    document.getElementById("levelTitle").textContent =
+      "Bahasa Jepang " + level.toUpperCase();
 
-      files[level].forEach(file => {
-        const a = document.createElement('a');
-        a.href = '#';
-        a.textContent = file;
-        a.onclick = (e) => {
-          e.preventDefault();
-          loadPDF(level, file);
-        };
-        fileList.appendChild(a);
-      });
+    const fileList = document.getElementById("fileList");
+    fileList.innerHTML = "";
 
-      if (files[level].length > 0) {
-        loadPDF(level, files[level][0]);
-      } else {
-        document.getElementById('pdfViewer').src = '';
-      }
+    files[level].forEach((file) => {
+      const a = document.createElement("a");
+      a.href = "#";
+      a.textContent = file;
+      a.onclick = (e) => {
+        e.preventDefault();
+        loadPDF(level, file);
+      };
+      fileList.appendChild(a);
+    });
+
+    if (files[level].length > 0) {
+      loadPDF(level, files[level][0]);
     }
+  }
 
-    function loadPDF(level, file) {
-      // cocok untuk GitHub Pages dan lokal
-      const pdfPath = `./assets/${level}/${file}`;
-      document.getElementById('pdfViewer').src = pdfPath;
-    }
+  function loadPDF(level, file) {
+    const pdfPath = `/${repoName}/assets/${level}/${file}`;
+    document.getElementById("pdfViewer").src = pdfPath;
+  }
 
-    function goHome() {
-      document.getElementById('viewerPage').style.display = 'none';
-      document.getElementById('home').style.display = 'flex';
-      document.getElementById('pdfViewer').src = '';
-    }
-  </script>
+  function goHome() {
+    document.getElementById("viewerPage").style.display = "none";
+    document.getElementById("home").style.display = "flex";
+  }
+</script>
+
 </body>
 </html>
