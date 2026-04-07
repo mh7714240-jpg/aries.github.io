@@ -6,37 +6,61 @@
   <title>Portal Belajar Danbo - N1 Specialist</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #eef7ff; min-height: 100vh; }
-    .home { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-    .chopper { width: 120px; margin-bottom: 20px; }
-    .folders { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; width: 90%; max-width: 600px; }
-    .folder { background: #ffd54f; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; font-weight: bold; }
-    .viewer-page { display: none; height: 100vh; grid-template-columns: 300px 1fr; }
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef7ff; min-height: 100vh; }
+    
+    /* Home Screen */
+    .home { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+    .chopper { width: 150px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .folders { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: min(800px, 100%); }
+    .folder { background: #ffd54f; border-radius: 15px; padding: 25px; text-align: center; cursor: pointer; transition: 0.3s; font-weight: bold; }
+    .folder:hover { transform: translateY(-5px); background: #ffca28; }
+
+    /* Viewer Layout */
+    .viewer-page { display: none; height: 100vh; grid-template-columns: 320px 1fr; }
     .sidebar { background: #fff8e1; padding: 20px; border-right: 2px solid #ffd54f; overflow-y: auto; }
-    .back-btn { padding: 10px; background: #1f3b5b; color: white; border-radius: 5px; text-align: center; cursor: pointer; margin-bottom: 20px; }
-    .file-item { padding: 12px; background: white; margin-bottom: 8px; border-radius: 8px; cursor: pointer; border: 1px solid #ddd; }
-    .file-item.active { background: #1f3b5b; color: white; }
-    .content-area { background: #f4f4f4; padding: 20px; overflow-y: auto; display: flex; justify-content: center; width: 100%; }
-    .quiz-container { background: white; width: 100%; max-width: 800px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .question { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
-    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .option-label { padding: 10px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-    .btn-selesai { background: #28a745; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 20px; }
-    .feedback { font-weight: bold; font-size: 0.9em; margin-top: 5px; display: block; }
+    .back-btn { padding: 12px; background: #1f3b5b; color: white; border-radius: 8px; text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
+    
+    .file-item { 
+      padding: 12px; background: white; margin-bottom: 8px; border-radius: 8px; 
+      cursor: pointer; font-size: 14px; border: 1px solid #eee; display: flex; align-items: center; gap: 10px;
+    }
+    .file-item:hover { background: #fff3cd; }
+    .file-item.active { background: #1f3b5b; color: white; border-left: 5px solid #ffd54f; }
+
+    .content-area { background: #f4f4f4; overflow-y: auto; display: flex; justify-content: center; padding: 20px; width: 100%; }
+
+    /* Quiz Styling */
+    .quiz-container { background: white; width: min(800px, 100%); padding: 35px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .quiz-header { border-bottom: 3px solid #ffd54f; margin-bottom: 25px; padding-bottom: 10px; }
+    .question { margin-bottom: 30px; padding: 15px; border-radius: 10px; background: #fdfdfd; border: 1px solid #f0f0f0; }
+    .question p { font-weight: bold; font-size: 1.1rem; color: #1f3b5b; line-height: 1.6; margin-top: 0; }
+    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+    .option-label { padding: 12px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+    
+    .btn-selesai { 
+      background: #28a745; color: white; border: none; padding: 15px; border-radius: 8px; 
+      cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1rem; margin-top: 10px;
+    }
+    .feedback { font-weight: bold; display: block; margin-top: 10px; }
     .correct { color: #28a745; }
     .wrong { color: #dc3545; }
-    @media (max-width: 768px) { .viewer-page { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .sidebar { max-height: 200px; } .options { grid-template-columns: 1fr; } }
+
+    @media (max-width: 768px) {
+      .viewer-page { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+      .sidebar { max-height: 220px; border-bottom: 2px solid #ffd54f; }
+      .options { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
   <div id="home" class="home">
-    <img class="chopper" src="https://media.giphy.com/media/3nYPJOsVt5RYnpPv3o/giphy.gif">
+    <img class="chopper" src="https://media.giphy.com/media/3nYPJOsVt5RYnpPv3o/giphy.gif" alt="Chopper">
     <h1>Portal Belajar Danbo</h1>
     <div class="folders">
-      <div class="folder" onclick="openLevel('n1')">JLPT N1</div>
-      <div class="folder" onclick="openLevel('n2')">JLPT N2</div>
-      <div class="folder" onclick="openLevel('n3')">JLPT N3</div>
+      <div class="folder" onclick="openLevel('n1')"><h2>JLPT N1</h2></div>
+      <div class="folder" onclick="openLevel('n2')"><h2>JLPT N2</h2></div>
+      <div class="folder" onclick="openLevel('n3')"><h2>JLPT N3</h2></div>
     </div>
   </div>
 
@@ -50,15 +74,16 @@
   </div>
 
   <script>
+    // Konfigurasi daftar file yang ada di sidebar
     const contentData = {
       n1: [
         { type: 'quiz', id: 'tes-2024-12', title: 'Tes 2024 Bulan 12', icon: '📝' },
-        { type: 'pdf', file: 'jlpt-n1-2024-12.pdf', title: 'PDF Materi', icon: '📄' }
+        { type: 'pdf', file: 'jlpt-n1-2024-12.pdf', title: 'PDF Materi N1', icon: '📄' }
       ],
       n2: [], n3: []
     };
 
-    let fullDataJSON = null;
+    let currentLevelJSON = null;
 
     async function openLevel(level) {
       document.getElementById('home').style.display = 'none';
@@ -66,71 +91,97 @@
       document.getElementById('levelTitle').textContent = 'Materi ' + level.toUpperCase();
 
       const listDiv = document.getElementById('fileList');
-      listDiv.innerHTML = 'Memuat...';
+      listDiv.innerHTML = 'Memuat data...';
 
       try {
-        // SESUAI GAMBAR: assets/n1/n1-data.json
+        // MENGAMBIL FILE: assets/n1/n1-data.json
         const response = await fetch(`assets/${level}/${level}-data.json`);
-        if (!response.ok) throw new Error("Gagal load JSON");
-        fullDataJSON = await response.json();
+        if (!response.ok) throw new Error("File JSON tidak ditemukan");
+        currentLevelJSON = await response.json();
       } catch (e) {
         console.error(e);
-        fullDataJSON = null;
+        currentLevelJSON = null;
       }
 
       listDiv.innerHTML = '';
+      if (!contentData[level] || contentData[level].length === 0) {
+        listDiv.innerHTML = '<p>Belum ada materi.</p>';
+        return;
+      }
+
       contentData[level].forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'file-item';
-        div.innerHTML = `${item.icon} ${item.title}`;
+        div.innerHTML = `<span>${item.icon}</span> <span>${item.title}</span>`;
         div.onclick = () => {
           if(item.type === 'pdf') loadPDF(level, item.file, div);
           else displayQuiz(item.id, div);
         };
         listDiv.appendChild(div);
-        if(index === 0) div.click();
+        if(index === 0) div.click(); // Auto-load materi pertama
       });
     }
 
     function displayQuiz(quizId, element) {
       setActive(element);
-      const area = document.getElementById('contentArea');
-
-      if (!fullDataJSON || !fullDataJSON[quizId]) {
-        area.innerHTML = `<h3>⚠️ Data kuis "${quizId}" tidak ditemukan di file JSON.</h3>`;
+      const container = document.getElementById('contentArea');
+      
+      if (!currentLevelJSON || !currentLevelJSON[quizId]) {
+        container.innerHTML = `<div style="padding:20px; text-align:center;">
+          <h3>⚠️ Data kuis tidak ditemukan.</h3>
+          <p>Pastikan ID "${quizId}" ada di dalam file JSON Anda.</p>
+        </div>`;
         return;
       }
 
-      const data = fullDataJSON[quizId];
-      let html = `<div class="quiz-container"><h2>${data.title}</h2><form id="quizForm">`;
-      data.questions.forEach((q, i) => {
-        html += `<div class="question"><p>${q.q} <span id="f-${i}" class="feedback"></span></p><div class="options">`;
-        q.options.forEach((opt, idx) => {
-          html += `<label class="option-label"><input type="radio" name="q${i}" value="${idx}"> ${opt}</label>`;
-        });
-        html += `</div></div>`;
+      const data = currentLevelJSON[quizId];
+      let html = `<div class="quiz-container">
+                    <div class="quiz-header">
+                      <h2>${data.title}</h2>
+                      <p>Pilih jawaban yang paling tepat!</p>
+                    </div>
+                    <form id="quizForm">`;
+      
+      data.questions.forEach((qObj, i) => {
+        html += `
+          <div class="question">
+            <p>${qObj.q} <span id="fb-${i}" class="feedback" style="display:none"></span></p>
+            <div class="options">
+              ${qObj.options.map((opt, idx) => `
+                <label class="option-label">
+                  <input type="radio" name="q${i}" value="${idx}"> ${opt}
+                </label>
+              `).join('')}
+            </div>
+          </div>`;
       });
+
       html += `<button type="button" class="btn-selesai" onclick="checkAnswers('${quizId}')">CEK JAWABAN</button></form></div>`;
-      area.innerHTML = html;
+      container.innerHTML = html;
     }
 
-    function checkAnswers(id) {
-      const qs = fullDataJSON[id].questions;
-      qs.forEach((q, i) => {
-        const sel = document.querySelector(`input[name="q${i}"]:checked`);
-        const fb = document.getElementById(`f-${i}`);
-        if(sel && parseInt(sel.value) === q.correct) {
-          fb.innerHTML = "✅ Benar!"; fb.className = "feedback correct";
+    function checkAnswers(quizId) {
+      const questions = currentLevelJSON[quizId].questions;
+      let score = 0;
+      questions.forEach((q, i) => {
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        const fb = document.getElementById(`fb-${i}`);
+        fb.style.display = 'inline';
+        if (selected && parseInt(selected.value) === q.correct) {
+          fb.innerHTML = " ✅ Benar!"; fb.className = "feedback correct";
+          score++;
         } else {
-          fb.innerHTML = `❌ Salah! (Benar: ${q.options[q.correct]})`; fb.className = "feedback wrong";
+          fb.innerHTML = ` ❌ Salah! (Jawaban: ${q.options[q.correct]})`; fb.className = "feedback wrong";
         }
       });
+      alert(`Skor Anda: ${score} / ${questions.length}`);
     }
 
-    function loadPDF(lvl, file, el) {
-      setActive(el);
-      const url = `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + window.location.pathname.replace('index.html','') + 'assets/'+lvl+'/'+file)}&embedded=true`;
-      document.getElementById('contentArea').innerHTML = `<iframe src="${url}" style="width:100%;height:100%;border:none;"></iframe>`;
+    function loadPDF(level, fileName, element) {
+      setActive(element);
+      const url = `assets/${level}/${fileName}`;
+      const embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(window.location.origin + window.location.pathname.replace('index.html','') + url)}&embedded=true`;
+      document.getElementById('contentArea').innerHTML = `<iframe src="${embedUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
     }
 
     function setActive(el) {
@@ -139,8 +190,8 @@
     }
 
     function goHome() {
-      document.getElementById('home').style.display = 'flex';
       document.getElementById('viewerPage').style.display = 'none';
+      document.getElementById('home').style.display = 'flex';
     }
   </script>
 </body>
