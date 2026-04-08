@@ -6,28 +6,29 @@
   <title>Portal Belajar Danbo - N1</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #eef7ff; }
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background: #eef7ff; color: #333; }
     .home { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-    .folders { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; width: 80%; }
-    .folder { background: #ffd54f; padding: 25px; border-radius: 15px; text-align: center; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .folders { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; width: 80%; max-width: 800px; }
+    .folder { background: #ffd54f; padding: 30px; border-radius: 15px; text-align: center; cursor: pointer; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .folder:hover { transform: translateY(-5px); background: #ffca28; }
     .viewer-page { display: none; height: 100vh; grid-template-columns: 300px 1fr; }
     .sidebar { background: #fff8e1; padding: 20px; border-right: 2px solid #ffd54f; overflow-y: auto; }
-    .back-btn { padding: 12px; background: #1f3b5b; color: white; border-radius: 8px; text-align: center; cursor: pointer; margin-bottom: 20px; }
-    .file-item { padding: 15px; background: white; margin-bottom: 10px; border-radius: 10px; cursor: pointer; border: 1px solid #ddd; }
-    .file-item.active { background: #1f3b5b; color: white; }
-    .content-area { background: #f4f4f4; padding: 20px; overflow-y: auto; width: 100%; display: flex; justify-content: center; }
-    .quiz-container { background: white; width: 100%; max-width: 800px; padding: 30px; border-radius: 15px; }
-    .question { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-    .reading-context { margin: 15px 0; border: 2px solid #1f3b5b; border-radius: 8px; }
-    .reading-label { background: #1f3b5b; color: white; padding: 5px 10px; font-size: 12px; }
+    .back-btn { padding: 12px; background: #1f3b5b; color: white; border-radius: 8px; text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
+    .file-item { padding: 15px; background: white; margin-bottom: 10px; border-radius: 10px; cursor: pointer; border: 1px solid #ddd; font-size: 14px; }
+    .file-item.active { background: #1f3b5b; color: white; border-color: #1f3b5b; }
+    .content-area { background: #f4f4f4; padding: 20px; overflow-y: auto; display: flex; justify-content: center; width: 100%; }
+    .quiz-container { background: white; width: 100%; max-width: 800px; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .question { margin-bottom: 35px; padding: 20px; border-bottom: 1px dashed #ccc; }
+    .reading-context { margin-bottom: 20px; border: 2px solid #1f3b5b; border-radius: 8px; background: #fff; overflow: hidden; }
+    .reading-label { background: #1f3b5b; color: white; padding: 8px 15px; font-size: 13px; font-weight: bold; }
     .quiz-image { width: 100%; height: auto; display: block; }
-    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .option-label { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-    .btn-selesai { background: #28a745; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 20px; }
-    .feedback { font-weight: bold; display: block; margin-top: 5px; }
+    .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .option-label { padding: 10px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; }
+    .btn-selesai { background: #28a745; color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; cursor: pointer; font-weight: bold; font-size: 1.1rem; margin-top: 20px; }
+    .feedback { display: block; margin-top: 8px; font-weight: bold; }
     .correct { color: #28a745; }
     .wrong { color: #dc3545; }
-    @media (max-width: 768px) { .viewer-page { grid-template-columns: 1fr; } .sidebar { max-height: 200px; } }
+    @media (max-width: 768px) { .viewer-page { grid-template-columns: 1fr; } .sidebar { max-height: 300px; } .options { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -36,7 +37,6 @@
     <h1>Portal Belajar Danbo</h1>
     <div class="folders">
       <div class="folder" onclick="openLevel('n1')">JLPT N1</div>
-      <div class="folder" onclick="openLevel('n2')">JLPT N2</div>
     </div>
   </div>
 
@@ -49,90 +49,101 @@
   </div>
 
   <script>
-    // SESUAIKAN DENGAN STRUKTUR GITHUB KAMU
-    const setup = {
-      n1: { 
-        path: "assets/n1/2024/12", // Jalur folder di GitHub
-        jsonName: "n1-data.json",   // Nama file JSON
-        quizId: "tes-2024-12" 
+    // KONFIGURASI BERDASARKAN GAMBAR GITHUB KAMU
+    const CONFIG = {
+      n1: {
+        jsonPath: "assets/n1/n1-data.json",      // Lokasi file JSON (di folder n1)
+        imageFolder: "assets/n1/2024/12",       // Lokasi gambar (di dalam folder 2024/12)
+        quizKey: "tes-2024-12",
+        title: "Tes N1 Des 2024"
       }
     };
 
-    let currentData = null;
+    let fullData = null;
     let currentLvl = '';
 
     async function openLevel(level) {
       currentLvl = level;
-      const config = setup[level];
-      if (!config) { alert("Data belum tersedia"); return; }
-
+      const cfg = CONFIG[level];
+      
       try {
-        // Memanggil: assets/n1/2024/12/n1-data.json
-        const response = await fetch(`${config.path}/${config.jsonName}`);
+        const response = await fetch(cfg.jsonPath);
         if (!response.ok) throw new Error("File tidak ditemukan");
-        
-        currentData = await response.json();
+        fullData = await response.json();
         
         document.getElementById('home').style.display = 'none';
         document.getElementById('viewerPage').style.display = 'grid';
         
-        renderSidebar(config.quizId);
-      } catch (err) {
-        console.error(err);
-        document.getElementById('fileList').innerHTML = `<p style="color:red">Gagal memuat JSON.<br>Pastikan file ada di:<br><b>${config.path}/${config.jsonName}</b></p>`;
-        document.getElementById('home').style.display = 'none';
-        document.getElementById('viewerPage').style.display = 'grid';
+        renderSidebar();
+      } catch (e) {
+        alert("Gagal memuat data! Pastikan file '" + cfg.jsonPath + "' sudah di-upload.");
       }
     }
 
-    function renderSidebar(quizId) {
+    function renderSidebar() {
       const list = document.getElementById('fileList');
-      list.innerHTML = `<div class="file-item active" onclick="loadQuiz('${quizId}')">📝 Tes Desember 2024</div>`;
-      loadQuiz(quizId);
+      const cfg = CONFIG[currentLvl];
+      list.innerHTML = `
+        <div class="file-item active" onclick="showQuiz('${cfg.quizKey}')">
+          📝 ${cfg.title}
+        </div>`;
+      showQuiz(cfg.quizKey);
     }
 
-    function loadQuiz(quizId) {
+    function showQuiz(key) {
       const area = document.getElementById('contentArea');
-      const data = currentData[quizId];
-      const config = setup[currentLvl];
+      const quiz = fullData[key];
+      const cfg = CONFIG[currentLvl];
       
-      let html = `<div class="quiz-container"><h2>${data.title}</h2><form id="qForm">`;
+      let html = `<div class="quiz-container"><h2>${quiz.title}</h2><form id="quizForm">`;
       
-      data.questions.forEach((q, i) => {
-        html += `<div class="question"><p><b>${q.q}</b> <span id="f-${i}" class="feedback"></span></p>`;
+      quiz.questions.forEach((q, i) => {
+        html += `<div class="question">`;
         
+        // Penanganan Gambar
         if (q.image) {
-          // Menghasilkan: assets/n1/2024/12/45.png
+          const imgSrc = `${cfg.imageFolder}/${q.image}`;
           html += `
             <div class="reading-context">
-              <div class="reading-label">GAMBAR/BACAAN</div>
-              <img src="${config.path}/${q.image}" class="quiz-image">
+              <div class="reading-label">BACAAN / KONTEKS NOMOR ${i + 1}</div>
+              <img src="${imgSrc}" class="quiz-image" onerror="this.src='https://via.placeholder.com/500x200?text=Gambar+Tidak+Ditemukan'">
             </div>`;
         }
 
-        html += `<div class="options">`;
+        html += `<p><b>${q.q}</b> <span id="feedback-${i}" class="feedback"></span></p>
+                 <div class="options">`;
+        
         q.options.forEach((opt, idx) => {
           html += `
             <label class="option-label">
-              <input type="radio" name="q${i}" value="${idx}"> ${opt}
+              <input type="radio" name="question${i}" value="${idx}"> ${opt}
             </label>`;
         });
+        
         html += `</div></div>`;
       });
-
-      html += `<button type="button" class="btn-selesai" onclick="check('${quizId}')">CEK JAWABAN</button></form></div>`;
+      
+      html += `<button type="button" class="btn-selesai" onclick="validate()">CEK JAWABAN</button></form></div>`;
       area.innerHTML = html;
+      area.scrollTop = 0;
     }
 
-    function check(id) {
-      const qs = currentData[id].questions;
-      qs.forEach((q, i) => {
-        const sel = document.querySelector(`input[name="q${i}"]:checked`);
-        const fb = document.getElementById(`f-${i}`);
-        if (sel && parseInt(sel.value) === q.correct) {
-          fb.innerHTML = "✅ Benar"; fb.className = "feedback correct";
+    function validate() {
+      const cfg = CONFIG[currentLvl];
+      const questions = fullData[cfg.quizKey].questions;
+      
+      questions.forEach((q, i) => {
+        const selected = document.querySelector(`input[name="question${i}"]:checked`);
+        const fb = document.getElementById(`feedback-${i}`);
+        
+        if (selected) {
+          if (parseInt(selected.value) === q.correct) {
+            fb.innerHTML = "✅ Benar!"; fb.className = "feedback correct";
+          } else {
+            fb.innerHTML = `❌ Salah! Jawaban: ${q.options[q.correct]}`; fb.className = "feedback wrong";
+          }
         } else {
-          fb.innerHTML = `❌ Salah (Jawaban: ${q.options[q.correct]})`; fb.className = "feedback wrong";
+          fb.innerHTML = "⚠️ Belum dijawab!"; fb.className = "feedback wrong";
         }
       });
     }
