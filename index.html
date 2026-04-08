@@ -14,7 +14,7 @@
     .viewer-page { display: none; height: 100vh; grid-template-columns: 300px 1fr; }
     .sidebar { background: #fff8e1; padding: 20px; border-right: 2px solid #ffd54f; overflow-y: auto; }
     .back-btn { padding: 12px; background: #1f3b5b; color: white; border-radius: 8px; text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: bold; }
-    .file-item { padding: 15px; background: white; margin-bottom: 10px; border-radius: 10px; cursor: pointer; border: 1px solid #ddd; font-size: 14px; }
+    .file-item { padding: 15px; background: white; margin-bottom: 10px; border-radius: 10px; cursor: pointer; border: 1px solid #ddd; }
     .file-item.active { background: #1f3b5b; color: white; border-color: #1f3b5b; }
     .content-area { background: #f4f4f4; padding: 20px; overflow-y: auto; display: flex; justify-content: center; width: 100%; }
     .quiz-container { background: white; width: 100%; max-width: 800px; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -28,7 +28,7 @@
     .feedback { display: block; margin-top: 8px; font-weight: bold; }
     .correct { color: #28a745; }
     .wrong { color: #dc3545; }
-    @media (max-width: 768px) { .viewer-page { grid-template-columns: 1fr; } .sidebar { max-height: 300px; } .options { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .viewer-page { grid-template-columns: 1fr; } .sidebar { max-height: 250px; } .options { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -49,11 +49,13 @@
   </div>
 
   <script>
-    // KONFIGURASI BERDASARKAN GAMBAR GITHUB KAMU
+    // KONFIGURASI SESUAI GAMBAR GITHUB KAMU
     const CONFIG = {
       n1: {
-        jsonPath: "assets/n1/n1-data.json",      // Lokasi file JSON (di folder n1)
-        imageFolder: "assets/n1/2024/12",       // Lokasi gambar (di dalam folder 2024/12)
+        // Karena index.html di luar, kita masuk ke assets/n1/
+        jsonUrl: "assets/n1/n1-data.json", 
+        // Gambar berada di assets/n1/2024/12/
+        imgBase: "assets/n1/2024/12",
         quizKey: "tes-2024-12",
         title: "Tes N1 Des 2024"
       }
@@ -67,8 +69,9 @@
       const cfg = CONFIG[level];
       
       try {
-        const response = await fetch(cfg.jsonPath);
-        if (!response.ok) throw new Error("File tidak ditemukan");
+        const response = await fetch(cfg.jsonUrl);
+        if (!response.ok) throw new Error("Gagal mengambil file JSON");
+        
         fullData = await response.json();
         
         document.getElementById('home').style.display = 'none';
@@ -76,7 +79,7 @@
         
         renderSidebar();
       } catch (e) {
-        alert("Gagal memuat data! Pastikan file '" + cfg.jsonPath + "' sudah di-upload.");
+        alert("Error: " + e.message + "\nPastikan file ada di: " + cfg.jsonUrl);
       }
     }
 
@@ -84,57 +87,56 @@
       const list = document.getElementById('fileList');
       const cfg = CONFIG[currentLvl];
       list.innerHTML = `
-        <div class="file-item active" onclick="showQuiz('${cfg.quizKey}')">
+        <div class="file-item active" onclick="loadQuiz('${cfg.quizKey}')">
           📝 ${cfg.title}
         </div>`;
-      showQuiz(cfg.quizKey);
+      loadQuiz(cfg.quizKey);
     }
 
-    function showQuiz(key) {
+    function loadQuiz(key) {
       const area = document.getElementById('contentArea');
-      const quiz = fullData[key];
+      const quizData = fullData[key];
       const cfg = CONFIG[currentLvl];
       
-      let html = `<div class="quiz-container"><h2>${quiz.title}</h2><form id="quizForm">`;
+      let html = `<div class="quiz-container"><h2>${quizData.title}</h2><form id="fQuiz">`;
       
-      quiz.questions.forEach((q, i) => {
+      quizData.questions.forEach((q, i) => {
         html += `<div class="question">`;
         
-        // Penanganan Gambar
+        // Cek Gambar
         if (q.image) {
-          const imgSrc = `${cfg.imageFolder}/${q.image}`;
+          // Path: assets/n1/2024/12/nama_file.png
+          const fullImgPath = `${cfg.imgBase}/${q.image}`;
           html += `
             <div class="reading-context">
-              <div class="reading-label">BACAAN / KONTEKS NOMOR ${i + 1}</div>
-              <img src="${imgSrc}" class="quiz-image" onerror="this.src='https://via.placeholder.com/500x200?text=Gambar+Tidak+Ditemukan'">
+              <div class="reading-label">GAMBAR SOAL NOMOR ${i + 1}</div>
+              <img src="${fullImgPath}" class="quiz-image" onerror="this.style.display='none'; console.log('Gambar tak ditemukan:', '${fullImgPath}')">
             </div>`;
         }
 
-        html += `<p><b>${q.q}</b> <span id="feedback-${i}" class="feedback"></span></p>
+        html += `<p><b>${q.q}</b> <span id="res-${i}" class="feedback"></span></p>
                  <div class="options">`;
         
         q.options.forEach((opt, idx) => {
           html += `
             <label class="option-label">
-              <input type="radio" name="question${i}" value="${idx}"> ${opt}
+              <input type="radio" name="q${i}" value="${idx}"> ${opt}
             </label>`;
         });
         
         html += `</div></div>`;
       });
       
-      html += `<button type="button" class="btn-selesai" onclick="validate()">CEK JAWABAN</button></form></div>`;
+      html += `<button type="button" class="btn-selesai" onclick="checkAll()">CEK JAWABAN</button></form></div>`;
       area.innerHTML = html;
       area.scrollTop = 0;
     }
 
-    function validate() {
-      const cfg = CONFIG[currentLvl];
-      const questions = fullData[cfg.quizKey].questions;
-      
+    function checkAll() {
+      const questions = fullData[CONFIG[currentLvl].quizKey].questions;
       questions.forEach((q, i) => {
-        const selected = document.querySelector(`input[name="question${i}"]:checked`);
-        const fb = document.getElementById(`feedback-${i}`);
+        const selected = document.querySelector(`input[name="q${i}"]:checked`);
+        const fb = document.getElementById(`res-${i}`);
         
         if (selected) {
           if (parseInt(selected.value) === q.correct) {
@@ -143,7 +145,7 @@
             fb.innerHTML = `❌ Salah! Jawaban: ${q.options[q.correct]}`; fb.className = "feedback wrong";
           }
         } else {
-          fb.innerHTML = "⚠️ Belum dijawab!"; fb.className = "feedback wrong";
+          fb.innerHTML = "⚠️ Isi dulu!"; fb.className = "feedback wrong";
         }
       });
     }
