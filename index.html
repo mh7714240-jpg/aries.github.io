@@ -8,7 +8,7 @@
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --success: #27ae60; --error: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Navigasi Folder */
+        /* Navigasi Folder & File */
         #folder-screen, #file-screen { padding: 50px; text-align: center; overflow-y: auto; }
         .folder-grid { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
         .folder-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; width: 120px; transition: 0.2s; }
@@ -100,19 +100,18 @@
     </div>
 
     <script>
-        // GANTI INI DENGAN URL RENDER KAMU
-        const BACKEND_URL = "https://web-backend-l5p7.onrender.com"; 
+        // URL Backend Render kamu
+        const BACKEND_URL = "https://web-backend-15p7.onrender.com/danbo-chat"; 
 
         let currentAnswers = [];
         let correctAnswers = [];
         let totalSoal = 0;
         let isFinished = false;
 
-        // Struktur folder sesuai GitHub
         const mockFiles = { 
             'n1': ['n1-2024-12'], 
             'n2': [], 
-            'n3': ['2012/12'] 
+            'n3': ['2012/12'] // Sesuai struktur assets/n3/2012/12.json
         };
 
         function showFolders() {
@@ -143,12 +142,11 @@
             area.innerHTML = "<p>Memuat soal...</p>";
 
             try {
-                // Fetch sesuai struktur assets/n3/2012/12.json
                 const response = await fetch(`assets/${level}/${fileName}.json`);
                 if (!response.ok) throw new Error("Gagal memuat soal.");
                 
                 const data = await response.json();
-                const key = Object.keys(data)[0]; // Mengambil key dinamis seperti "test_2012_12"
+                const key = Object.keys(data)[0]; 
                 const questions = data[key].questions;
 
                 document.getElementById('exam-title-display').innerText = data[key].title;
@@ -169,7 +167,7 @@
                 });
                 updateStatus();
             } catch (err) {
-                area.innerHTML = `<p style='color:red;'>Gagal memuat soal: assets/${level}/${fileName}.json</p>`;
+                area.innerHTML = `<p style='color:red;'>File tidak ditemukan di: assets/${level}/${fileName}.json</p>`;
             }
         }
 
@@ -201,7 +199,8 @@
             document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
             
             openDanbo();
-            addDanboMessage(`<strong>Danbo:</strong> Selesai! Skor kamu **${score}/${totalSoal}**. Tetap semangat ya! Ada yang ingin ditanyakan tentang soalnya?`);
+            // Pesan otomatis saat selesai
+            addDanboMessage(`<strong>Danbo:</strong> Selesai! Skor kamu **${score}/${totalSoal}**. Ada yang ingin ditanyakan?`);
         }
 
         async function sendMessage() {
@@ -213,19 +212,24 @@
             inputEl.value = '';
 
             try {
+                // Fetch ke server Render
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
                         score: currentAnswers.filter(a => a !== null).length, 
                         total: totalSoal,
-                        userQuery: message // Data ini diterima oleh server.js kamu
+                        userQuery: message 
                     })
                 });
+                
+                if (!response.ok) throw new Error();
+                
                 const data = await response.json();
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
             } catch (e) {
-                addDanboMessage(`<strong>Danbo:</strong> Maaf, koneksi ke server terputus. Coba lagi!`);
+                // Penanganan jika server sedang "tidur" atau koneksi putus
+                addDanboMessage(`<strong>Danbo:</strong> Maaf, koneksi terputus. Server mungkin sedang 'bangun' (tunggu 1 menit) atau cek log Render kamu!`);
             }
         }
 
