@@ -100,7 +100,6 @@
     </div>
 
     <script>
-        // URL Backend Render kamu
         const BACKEND_URL = "https://web-backend-l5p7.onrender.com/danbo-chat"; 
 
         let currentAnswers = [];
@@ -111,7 +110,7 @@
         const mockFiles = { 
             'n1': ['n1-2024-12'], 
             'n2': [], 
-            'n3': ['2012/12'] // Sesuai struktur assets/n3/2012/12.json
+            'n3': ['2012/12']
         };
 
         function showFolders() {
@@ -158,6 +157,7 @@
                 questions.forEach((item, qIdx) => {
                     const card = document.createElement('div');
                     card.className = 'question-card';
+                    card.setAttribute('data-question-text', item.q); // Simpan teks soal di attribute
                     let opts = '';
                     item.options.forEach((opt, oIdx) => {
                         opts += `<div class="option-item" id="q${qIdx}-o${oIdx}" onclick="pickOption(${qIdx}, ${oIdx})">${oIdx + 1}. ${opt}</div>`;
@@ -199,7 +199,6 @@
             document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
             
             openDanbo();
-            // Pesan otomatis saat selesai
             addDanboMessage(`<strong>Danbo:</strong> Selesai! Skor kamu **${score}/${totalSoal}**. Ada yang ingin ditanyakan?`);
         }
 
@@ -208,28 +207,35 @@
             const message = inputEl.value.trim();
             if (!message) return;
 
+            // --- REVISI: Ambil Konteks Soal ---
+            let activeQuestionContext = "";
+            if (document.getElementById('exam-screen').style.display === 'flex') {
+                const cards = document.querySelectorAll('.question-card');
+                activeQuestionContext = Array.from(cards).map((c, index) => {
+                    return `Soal ${index + 1}: ${c.innerText}`;
+                }).join("\n\n");
+            }
+
             addDanboMessage(`<strong>Kamu:</strong> ${message}`);
             inputEl.value = '';
 
             try {
-                // Fetch ke server Render
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
                         score: currentAnswers.filter(a => a !== null).length, 
                         total: totalSoal,
-                        userQuery: message 
+                        userQuery: message,
+                        context: activeQuestionContext // Kirim soal ke server
                     })
                 });
                 
                 if (!response.ok) throw new Error();
-                
                 const data = await response.json();
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
             } catch (e) {
-                // Penanganan jika server sedang "tidur" atau koneksi putus
-                addDanboMessage(`<strong>Danbo:</strong> Maaf, koneksi terputus. Server mungkin sedang 'bangun' (tunggu 1 menit) atau cek log Render kamu!`);
+                addDanboMessage(`<strong>Danbo:</strong> Maaf, koneksi terputus. Server mungkin sedang 'bangun' (tunggu 1 menit).`);
             }
         }
 
