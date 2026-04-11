@@ -107,7 +107,7 @@
         const mockFiles = { 
             'n1': ['n1-2024-12'], 
             'n2': [], 
-            'n3': ['2011/07', '2012/12'] 
+            'n3': ['2011/07', '2012/12', '2013/12'] 
         };
 
         function showFolders() {
@@ -138,6 +138,7 @@
             area.innerHTML = "<p>Memuat soal...</p>";
 
             try {
+                // Mengambil file dari assets/[level]/[path/file].json
                 const response = await fetch(`assets/${level}/${fileName}.json`);
                 if (!response.ok) throw new Error("File tidak ditemukan");
                 
@@ -157,13 +158,12 @@
                     item.options.forEach((opt, oIdx) => {
                         opts += `<div class="option-item" id="q${qIdx}-o${oIdx}" onclick="pickOption(${qIdx}, ${oIdx})">${oIdx + 1}. ${opt}</div>`;
                     });
-                    // Tetap tampil bersih, kategori disimpan di data-attribute untuk Danbo
                     card.innerHTML = `<p class="q-text" data-cat="${item.category}"><strong>[SOAL ${qIdx + 1}]</strong><br>${item.q}</p><div class="options-list">${opts}</div>`;
                     area.appendChild(card);
                 });
                 updateStatus();
             } catch (err) {
-                area.innerHTML = `<p style='color:red;'>Gagal memuat file soal.</p>`;
+                area.innerHTML = `<p style='color:red;'>Gagal memuat file soal: ${err.message}</p>`;
             }
         }
 
@@ -199,7 +199,6 @@
             const message = inputEl.value.trim();
             if (!message) return;
 
-            // Membuat konteks tersembunyi (Kategori + Teks) untuk dikirim ke Danbo
             let hiddenContext = currentQuestions.map((q, idx) => {
                 return `[ID:${idx+1}] [KAT:${q.category}] Soal: ${q.q}`;
             }).join("\n");
