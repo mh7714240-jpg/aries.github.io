@@ -104,7 +104,12 @@
         let isFinished = false;
         let chatHistory = []; 
 
-        const mockFiles = { 'n1': ['n1-2024-12'], 'n2': [], 'n3': ['2012/12'] };
+        // Update Indeks Folder: Sesuai struktur GitHub assets/n3/2011/07
+        const mockFiles = { 
+            'n1': ['n1-2024-12'], 
+            'n2': [], 
+            'n3': ['2011/07', '2012/12'] 
+        };
 
         function showFolders() {
             document.getElementById('folder-screen').classList.remove('hidden');
@@ -134,7 +139,10 @@
             area.innerHTML = "<p>Memuat soal...</p>";
 
             try {
+                // Fetch menggunakan struktur folder tahunan dan ekstensi .json
                 const response = await fetch(`assets/${level}/${fileName}.json`);
+                if (!response.ok) throw new Error("File tidak ditemukan");
+                
                 const data = await response.json();
                 const key = Object.keys(data)[0]; 
                 const questions = data[key].questions;
@@ -153,12 +161,14 @@
                     item.options.forEach((opt, oIdx) => {
                         opts += `<div class="option-item" id="q${qIdx}-o${oIdx}" onclick="pickOption(${qIdx}, ${oIdx})">${oIdx + 1}. ${opt}</div>`;
                     });
+                    // Labeling [SOAL X] yang tegas untuk membantu Danbo mencari konteks
                     card.innerHTML = `<p class="q-text"><strong>[SOAL ${qIdx + 1}]</strong><br>${item.q}</p><div class="options-list">${opts}</div>`;
                     area.appendChild(card);
                 });
                 updateStatus();
             } catch (err) {
-                area.innerHTML = `<p style='color:red;'>Gagal memuat file soal.</p>`;
+                console.error(err);
+                area.innerHTML = `<p style='color:red;'>Gagal memuat file soal: ${fileName}. Pastikan file ada di assets/${level}/ dan berakhiran .json</p>`;
             }
         }
 
@@ -188,7 +198,7 @@
             document.getElementById('result-box').style.display = 'block';
             document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
             openDanbo();
-            addDanboMessage(`<strong>Danbo:</strong> Selesai! Skor kamu **${score}/${totalSoal}**. Sekarang kamu bebas bertanya tentang pembahasannya!`);
+            addDanboMessage(`<strong>Danbo:</strong> Selesai! Skor kamu **${score}/${totalSoal}**. Sekarang kamu bisa tanya pembahasan soal tadi!`);
         }
 
         async function sendMessage() {
@@ -198,13 +208,12 @@
 
             const statusMode = isFinished ? "POST_EXAM" : "DURING_EXAM";
 
-            // Mengumpulkan konteks soal yang rapi
+            // Mengirim konteks soal dengan tag [SOAL X] agar AI akurat
             let activeQuestionContext = "";
             if (document.getElementById('exam-screen').style.display === 'flex') {
                 const cards = document.querySelectorAll('.question-card');
                 activeQuestionContext = Array.from(cards).map((c) => {
-                    const text = c.querySelector('.q-text').innerText;
-                    return text; // Format: [SOAL X] ...teks soal...
+                    return c.querySelector('.q-text').innerText;
                 }).join("\n\n");
             }
 
@@ -226,13 +235,12 @@
                 const data = await response.json();
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
 
-                // Simpan history (batas 6 pesan agar fokus)
                 chatHistory.push({ role: "user", content: message });
                 chatHistory.push({ role: "assistant", content: data.reply });
                 if (chatHistory.length > 6) chatHistory.shift(); 
 
             } catch (e) {
-                addDanboMessage(`<strong>Danbo:</strong> Koneksi bermasalah.`);
+                addDanboMessage(`<strong>Danbo:</strong> Maaf, ada masalah koneksi!`);
             }
         }
 
