@@ -32,21 +32,11 @@
         .btn-finish { background: var(--success); color: white; padding: 15px 40px; border: none; border-radius: 30px; font-size: 18px; cursor: pointer; margin: 20px 0; }
         #result-box { display: none; margin: 30px 0; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); text-align: center; }
         
-        /* Container untuk Chart agar rapi */
-        .chart-container { max-width: 400px; margin: 20px auto; position: relative; }
+        .chart-container { max-width: 350px; margin: 20px auto; position: relative; }
 
-        /* Icon Chat */
-        #chat-icon { 
-            position: fixed; bottom: 20px; right: 20px; 
-            width: 70px; height: 70px; background: white; 
-            border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
-            cursor: pointer; display: none; z-index: 1000; 
-            border: 2px solid var(--accent); overflow: hidden; transition: transform 0.2s;
-        }
-        #chat-icon:hover { transform: scale(1.1); }
+        /* Chat Icon & Sidebar */
+        #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; transition: 0.2s; }
         #chat-icon img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* Chat Sidebar */
         #chat-sidebar { position: fixed; bottom: -40vh; left: 0; width: 100%; height: 40vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
         #chat-sidebar.active { bottom: 0; }
         .chat-header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -89,7 +79,7 @@
                     <div class="chart-container">
                         <canvas id="scoreChart"></canvas>
                     </div>
-                    <button class="btn-finish" onclick="location.reload()">Selesai & Keluar</button>
+                    <button class="btn-finish" onclick="location.reload()">Tutup & Kembali</button>
                 </div>
             </div>
         </div>
@@ -122,8 +112,7 @@
         let chatHistory = []; 
 
         const mockFiles = { 
-            'n1': ['n1-2024-12'], 
-            'n2': [], 
+            'n1': ['n1-2024-12'], 'n2': [], 
             'n3': ['2011/07', '2012/12', '2013/07', '2013/12', '2014/07', '2014/12', '2015/07', '2015/12', '2016/07', '2016/12' , '2017/07', '2017/12', '2018/07', '2018/12', '2019/07', '2019/12', '2020/07', '2020/12', '2021/07', '2021/12', '2022/07', '2022/12', '2023/07', '2023/12'] 
         };
 
@@ -157,15 +146,12 @@
             try {
                 const response = await fetch(`assets/${level}/${fileName}.json`);
                 if (!response.ok) throw new Error("File tidak ditemukan");
-                
                 const data = await response.json();
                 const key = Object.keys(data)[0]; 
                 currentQuestions = data[key].questions;
-
                 document.getElementById('exam-title-display').innerText = data[key].title;
                 totalSoal = currentQuestions.length;
                 currentAnswers = new Array(totalSoal).fill(null);
-
                 area.innerHTML = '';
                 currentQuestions.forEach((item, qIdx) => {
                     const card = document.createElement('div');
@@ -174,7 +160,7 @@
                     item.options.forEach((opt, oIdx) => {
                         opts += `<div class="option-item" id="q${qIdx}-o${oIdx}" onclick="pickOption(${qIdx}, ${oIdx})">${oIdx + 1}. ${opt}</div>`;
                     });
-                    card.innerHTML = `<p class="q-text" data-cat="${item.category}"><strong>[SOAL ${qIdx + 1}]</strong><br>${item.q}</p><div class="options-list">${opts}</div>`;
+                    card.innerHTML = `<p class="q-text"><strong>[SOAL ${qIdx + 1}]</strong><br>${item.q}</p><div class="options-list">${opts}</div>`;
                     area.appendChild(card);
                 });
                 updateStatus();
@@ -200,33 +186,37 @@
             isFinished = true;
             let score = 0;
             
-            // Statistik kategori
+            // Inisialisasi Stats dengan Fallback Aman
             const stats = {
                 "KANJI": { correct: 0, total: 0 },
-                "GOI": { correct: 0, total: 0 }, // Vocabulary
-                "BUNPOU": { correct: 0, total: 0 }, // Grammar
-                "DOKKAI": { correct: 0, total: 0 }, // Reading
-                "CHOUKAI": { correct: 0, total: 0 } // Listening
+                "GOI": { correct: 0, total: 0 },
+                "BUNPOU": { correct: 0, total: 0 },
+                "DOKKAI": { correct: 0, total: 0 },
+                "CHOUKAI": { correct: 0, total: 0 }
             };
 
             currentQuestions.forEach((q, i) => {
-                // Pemetaan kategori agar masuk ke 5 kategori utama
-                let cat = q.category.toUpperCase();
-                if (cat.includes("KANJI")) cat = "KANJI";
-                else if (cat.includes("VOCAB") || cat.includes("GOI")) cat = "GOI";
-                else if (cat.includes("BUNPOU") || cat.includes("GRAMMAR")) cat = "BUNPOU";
-                else if (cat.includes("DOKKAI") || cat.includes("READING")) cat = "DOKKAI";
-                else if (cat.includes("CHOUKAI") || cat.includes("LISTENING")) cat = "CHOUKAI";
-                else cat = "GOI"; // fallback
+                let rawCat = (q.category || "GOI").toUpperCase();
+                let targetCat = "GOI"; 
 
-                if(stats[cat]) stats[cat].total++;
+                // Mapping Kategori
+                if (rawCat.includes("KANJI")) targetCat = "KANJI";
+                else if (rawCat.includes("GOI") || rawCat.includes("VOCAB")) targetCat = "GOI";
+                else if (rawCat.includes("BUNPOU") || rawCat.includes("GRAMMAR")) targetCat = "BUNPOU";
+                else if (rawCat.includes("DOKKAI") || rawCat.includes("READING")) targetCat = "DOKKAI";
+                else if (rawCat.includes("CHOUKAI") || rawCat.includes("LISTENING")) targetCat = "CHOUKAI";
 
-                document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
-                if(currentAnswers[i] === q.correct) {
+                stats[targetCat].total++;
+
+                const correctEl = document.getElementById(`q${i}-o${q.correct}`);
+                if (correctEl) correctEl.classList.add('correct');
+
+                if (currentAnswers[i] === q.correct) {
                     score++;
-                    if(stats[cat]) stats[cat].correct++;
+                    stats[targetCat].correct++;
                 } else if (currentAnswers[i] !== null) {
-                    document.getElementById(`q${i}-o${currentAnswers[i]}`).classList.add('wrong');
+                    const wrongEl = document.getElementById(`q${i}-o${currentAnswers[i]}`);
+                    if (wrongEl) wrongEl.classList.add('wrong');
                 }
             });
 
@@ -234,52 +224,30 @@
             document.getElementById('result-box').style.display = 'block';
             document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
             
-            drawChart(stats);
+            try { drawChart(stats); } catch (e) { console.error(e); }
             openDanbo();
         }
 
         function drawChart(stats) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
-            
-            // Hitung persentase (0-100)
-            const calcPct = (cat) => stats[cat].total > 0 ? Math.round((stats[cat].correct / stats[cat].total) * 100) : 0;
-
-            const dataValues = [
-                calcPct("KANJI"),
-                calcPct("GOI"),
-                calcPct("BUNPOU"),
-                calcPct("DOKKAI"),
-                calcPct("CHOUKAI")
-            ];
+            const getPct = (k) => stats[k].total > 0 ? Math.round((stats[k].correct / stats[k].total) * 100) : 0;
 
             new Chart(ctx, {
                 type: 'radar',
                 data: {
                     labels: ['Kanji', 'Vocabulary', 'Grammar', 'Reading', 'Choukai'],
                     datasets: [{
-                        label: 'Penguasaan (%)',
-                        data: dataValues,
-                        fill: true,
+                        label: 'Penguasaan %',
+                        data: [getPct("KANJI"), getPct("GOI"), getPct("BUNPOU"), getPct("DOKKAI"), getPct("CHOUKAI")],
                         backgroundColor: 'rgba(52, 152, 219, 0.2)',
                         borderColor: 'rgba(52, 152, 219, 1)',
                         pointBackgroundColor: 'rgba(52, 152, 219, 1)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgba(52, 152, 219, 1)'
+                        borderWidth: 2
                     }]
                 },
                 options: {
-                    scales: {
-                        r: {
-                            angleLines: { display: true },
-                            suggestedMin: 0,
-                            suggestedMax: 100,
-                            ticks: { stepSize: 20, display: false }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+                    plugins: { legend: { display: false } }
                 }
             });
         }
@@ -288,39 +256,24 @@
             const inputEl = document.getElementById('user-input');
             const message = inputEl.value.trim();
             if (!message) return;
-
-            let hiddenContext = currentQuestions.map((q, idx) => {
-                return `[ID:${idx+1}] [KAT:${q.category}] Soal: ${q.q}`;
-            }).join("\n");
-
             addDanboMessage(`<strong>Kamu:</strong> ${message}`);
             inputEl.value = '';
-
             try {
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        userQuery: message,
-                        history: chatHistory, 
-                        context: hiddenContext,
-                        status: isFinished ? "POST_EXAM" : "DURING_EXAM"
-                    })
+                    body: JSON.stringify({ userQuery: message, history: chatHistory, status: isFinished ? "POST_EXAM" : "DURING_EXAM" })
                 });
                 const data = await response.json();
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
                 chatHistory.push({ role: "user", content: message }, { role: "assistant", content: data.reply });
-            } catch (e) {
-                addDanboMessage(`<strong>Danbo:</strong> Maaf, koneksi terputus.`);
-            }
+            } catch (e) { addDanboMessage(`<strong>Danbo:</strong> Koneksi terputus.`); }
         }
 
         function addDanboMessage(text) {
             const msgBox = document.getElementById('danbo-msg');
-            const p = document.createElement('p');
-            p.innerHTML = text;
-            msgBox.appendChild(p);
-            msgBox.scrollTop = msgBox.scrollHeight;
+            const p = document.createElement('p'); p.innerHTML = text;
+            msgBox.appendChild(p); msgBox.scrollTop = msgBox.scrollHeight;
         }
 
         function openDanbo() {
