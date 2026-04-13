@@ -79,7 +79,7 @@
                     <div class="chart-container">
                         <canvas id="scoreChart"></canvas>
                     </div>
-                    <button class="btn-finish" onclick="location.reload()">Tutup & Kembali</button>
+                    <button class="btn-finish" onclick="location.reload()">Selesai & Keluar</button>
                 </div>
             </div>
         </div>
@@ -112,7 +112,8 @@
         let chatHistory = []; 
 
         const mockFiles = { 
-            'n1': ['n1-2024-12'], 'n2': [], 
+            'n1': ['n1-2024-12'], 
+            'n2': [], 
             'n3': ['2011/07', '2012/12', '2013/07', '2013/12', '2014/07', '2014/12', '2015/07', '2015/12', '2016/07', '2016/12' , '2017/07', '2017/12', '2018/07', '2018/12', '2019/07', '2019/12', '2020/07', '2020/12', '2021/07', '2021/12', '2022/07', '2022/12', '2023/07', '2023/12'] 
         };
 
@@ -185,8 +186,6 @@
         function showResults() {
             isFinished = true;
             let score = 0;
-            
-            // Inisialisasi Stats dengan Fallback Aman
             const stats = {
                 "KANJI": { correct: 0, total: 0 },
                 "GOI": { correct: 0, total: 0 },
@@ -198,8 +197,6 @@
             currentQuestions.forEach((q, i) => {
                 let rawCat = (q.category || "GOI").toUpperCase();
                 let targetCat = "GOI"; 
-
-                // Mapping Kategori
                 if (rawCat.includes("KANJI")) targetCat = "KANJI";
                 else if (rawCat.includes("GOI") || rawCat.includes("VOCAB")) targetCat = "GOI";
                 else if (rawCat.includes("BUNPOU") || rawCat.includes("GRAMMAR")) targetCat = "BUNPOU";
@@ -207,7 +204,6 @@
                 else if (rawCat.includes("CHOUKAI") || rawCat.includes("LISTENING")) targetCat = "CHOUKAI";
 
                 stats[targetCat].total++;
-
                 const correctEl = document.getElementById(`q${i}-o${q.correct}`);
                 if (correctEl) correctEl.classList.add('correct');
 
@@ -225,13 +221,30 @@
             document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
             
             try { drawChart(stats); } catch (e) { console.error(e); }
+
+            // --- RESPON PROAKTIF DANBO ---
             openDanbo();
+            let lowestCat = "KANJI";
+            let minPct = 101;
+            for (let cat in stats) {
+                let pct = stats[cat].total > 0 ? (stats[cat].correct / stats[cat].total) * 100 : 100;
+                if (pct < minPct && stats[cat].total > 0) { minPct = pct; lowestCat = cat; }
+            }
+
+            let danboMsg = `Halo! Skor kamu adalah <b>${score}/${totalSoal}</b>. `;
+            if (score/totalSoal >= 0.8) danboMsg += "Luar biasa! Kamu hebat sekali! 🔥";
+            else if (score/totalSoal >= 0.5) danboMsg += "Bagus! Terus berlatih ya agar lebih maksimal. 💪";
+            else danboMsg += "Tetap semangat! Jangan menyerah, Danbo siap bantu kamu belajar. ✨";
+
+            if (minPct < 60) danboMsg += `<br><br>Sepertinya bagian <b>${lowestCat}</b> agak sulit ya? Bagian mana yang paling membingungkan?`;
+            else danboMsg += "<br><br>Ada soal yang ingin kita bahas?";
+
+            addDanboMessage(`<strong>Danbo:</strong> ${danboMsg}`);
         }
 
         function drawChart(stats) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
             const getPct = (k) => stats[k].total > 0 ? Math.round((stats[k].correct / stats[k].total) * 100) : 0;
-
             new Chart(ctx, {
                 type: 'radar',
                 data: {
@@ -262,7 +275,12 @@
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userQuery: message, history: chatHistory, status: isFinished ? "POST_EXAM" : "DURING_EXAM" })
+                    body: JSON.stringify({ 
+                        userQuery: message, 
+                        history: chatHistory, 
+                        status: isFinished ? "POST_EXAM" : "DURING_EXAM",
+                        currentScore: isFinished ? document.getElementById('final-score').innerText : ""
+                    })
                 });
                 const data = await response.json();
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
