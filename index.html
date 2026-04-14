@@ -9,7 +9,6 @@
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --success: #27ae60; --error: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Screens */
         #folder-screen, #file-screen { padding: 50px; text-align: center; overflow-y: auto; }
         .folder-grid { display: flex; justify-content: center; gap: 20px; margin-top: 30px; flex-wrap: wrap; }
         .folder-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; width: 120px; transition: 0.2s; }
@@ -21,7 +20,6 @@
         #exam-content { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 150px; }
         body.chat-open #exam-content { height: 60vh; flex: none; }
 
-        /* Question Styles */
         .question-card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .question-image { max-width: 100%; height: auto; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; display: block; }
         .options-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
@@ -30,12 +28,10 @@
         .option-item.correct { background: var(--success) !important; color: white !important; border-color: var(--success) !important; }
         .option-item.wrong { background: var(--error) !important; color: white !important; border-color: var(--error) !important; }
 
-        /* Results & Chart */
         .btn-finish { background: var(--success); color: white; padding: 15px 40px; border: none; border-radius: 30px; font-size: 18px; cursor: pointer; margin: 20px 0; }
         #result-box { display: none; margin: 30px 0; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); text-align: center; }
         .chart-container { max-width: 450px; margin: 20px auto; background: #fff; padding: 10px; border-radius: 10px; }
 
-        /* Danbo Chat UI */
         #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; }
         #chat-icon img { width: 100%; height: 100%; object-fit: cover; }
         #chat-sidebar { position: fixed; bottom: -45vh; left: 0; width: 100%; height: 45vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
@@ -152,7 +148,6 @@
                 totalSoal = currentQuestions.length;
                 currentAnswers = new Array(totalSoal).fill(null);
                 
-                // Menangani path gambar sesuai folder tahun/bulan
                 const pathParts = fileName.split('/');
                 const imgPathBase = `assets/${level}/${pathParts[0]}/${pathParts[1]}/`;
                 
@@ -177,7 +172,7 @@
                             return Number(name) === jsonNum;
                         });
                         if (matchedImg) {
-                            imgHTML = `<img src="${imgPathBase}${matchedImg}.png" class="question-image" alt="Soal ${jsonNum}">`;
+                            imgHTML = `<img src="${imgPathBase}${matchedImg}.png" class="question-image">`;
                         }
                     }
 
@@ -191,7 +186,7 @@
                 });
                 updateStatus();
             } catch (err) {
-                area.innerHTML = `<p style='color:red;'>Gagal memuat soal. Periksa struktur folder assets.</p>`;
+                area.innerHTML = `<p style='color:red;'>Gagal memuat soal.</p>`;
             }
         }
 
@@ -212,74 +207,91 @@
             isFinished = true;
             let score = 0;
             
-            // Inisialisasi statistik rinci (Rincian ke-2 sesuai permintaan)
-            const stats = {
+            // Statistik Master (Pasti 5 Kategori)
+            const mainStats = {
                 "KANJI": {c:0, t:0},
                 "GOI": {c:0, t:0},
-                "BUNPOU": {c:0, t:0}, "KUMITATE": {c:0, t:0},
-                "TANBUN": {c:0, t:0}, "CHOUBUN": {c:0, t:0},
-                "NICHIJYOU": {c:0, t:0}, "JYOUHOU": {c:0, t:0}
+                "BUNPOU": {c:0, t:0},
+                "DOKKAI": {c:0, t:0},
+                "CHOUKAI": {c:0, t:0}
+            };
+
+            // Statistik Rinci untuk Deskripsi Danbo
+            const detailStats = {
+                "KUMITATE": {c:0, t:0},
+                "TANBUN": {c:0, t:0},
+                "CHOUBUN": {c:0, t:0},
+                "NICHIJYOU": {c:0, t:0},
+                "JYOUHOU": {c:0, t:0}
             };
 
             currentQuestions.forEach((q, i) => {
                 let cat = (q.category || "GOI").toUpperCase();
-                if (stats[cat]) stats[cat].t++;
+                
+                // Logika Pemetaan ke 5 Pilar Utama
+                let pilar = "GOI"; 
+                if (cat === "KANJI") pilar = "KANJI";
+                else if (cat === "GOI") pilar = "GOI";
+                else if (cat === "BUNPOU" || cat === "KUMITATE") pilar = "BUNPOU";
+                else if (cat === "TANBUN" || cat === "CHOUBUN" || cat === "DOKKAI") pilar = "DOKKAI";
+                else if (cat === "NICHIJYOU" || cat === "JYOUHOU" || cat === "CHOUKAI") pilar = "CHOUKAI";
+
+                mainStats[pilar].t++;
+                if (detailStats[cat]) detailStats[cat].t++;
                 
                 document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
                 if (currentAnswers[i] === q.correct) {
                     score++;
-                    if (stats[cat]) stats[cat].c++;
+                    mainStats[pilar].c++;
+                    if (detailStats[cat]) detailStats[cat].c++;
                 } else if (currentAnswers[i] !== null) {
                     document.getElementById(`q${i}-o${currentAnswers[i]}`).classList.add('wrong');
                 }
             });
 
-            // Mapping ke format Segi Lima untuk Chart
-            const chartData = {
-                "Kanji": stats.KANJI.t ? (stats.KANJI.c / stats.KANJI.t) * 100 : 0,
-                "Goi": stats.GOI.t ? (stats.GOI.c / stats.GOI.t) * 100 : 0,
-                "Bunpou": (stats.BUNPOU.t + stats.KUMITATE.t) > 0 ? ((stats.BUNPOU.c + stats.KUMITATE.c) / (stats.BUNPOU.t + stats.KUMITATE.t)) * 100 : 0,
-                "Dokkai": (stats.TANBUN.t + stats.CHOUBUN.t) > 0 ? ((stats.TANBUN.c + stats.CHOUBUN.c) / (stats.TANBUN.t + stats.CHOUBUN.t)) * 100 : 0,
-                "Choukai": (stats.NICHIJYOU.t + stats.JYOUHOU.t) > 0 ? ((stats.NICHIJYOU.c + stats.JYOUHOU.c) / (stats.NICHIJYOU.t + stats.JYOUHOU.t)) * 100 : 0
-            };
+            // Menyusun 5 data poin (Pasti 5 angka, jika t=0 maka skor 0)
+            const dataPoin = [
+                mainStats.KANJI.t ? (mainStats.KANJI.c / mainStats.KANJI.t) * 100 : 0,
+                mainStats.GOI.t ? (mainStats.GOI.c / mainStats.GOI.t) * 100 : 0,
+                mainStats.BUNPOU.t ? (mainStats.BUNPOU.c / mainStats.BUNPOU.t) * 100 : 0,
+                mainStats.DOKKAI.t ? (mainStats.DOKKAI.c / mainStats.DOKKAI.t) * 100 : 0,
+                mainStats.CHOUKAI.t ? (mainStats.CHOUKAI.c / mainStats.CHOUKAI.t) * 100 : 0
+            ];
 
             document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('result-box').style.display = 'block';
             document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
             
-            drawChart(chartData);
+            drawChart(dataPoin);
             openDanbo();
             
-            // Deskripsi Penilaian Rinci untuk Kolom Chat
+            // Pesan Danbo dengan Rincian ke-2
             let danboReport = `<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${score}/${totalSoal}</b>.<br><br>`;
             danboReport += `<b>Rincian Penilaian:</b><br>`;
-            danboReport += `• Kanji: ${stats.KANJI.c}/${stats.KANJI.t}<br>`;
-            danboReport += `• Goi: ${stats.GOI.c}/${stats.GOI.t}<br>`;
-            danboReport += `• Bunpou (Grammar & Kumitate): ${stats.BUNPOU.c + stats.KUMITATE.c}/${stats.BUNPOU.t + stats.KUMITATE.t}<br>`;
-            danboReport += `• Dokkai (Tanbun & Choubun): ${stats.TANBUN.c + stats.CHOUBUN.c}/${stats.TANBUN.t + stats.CHOUBUN.t}<br>`;
-            danboReport += `• Choukai (Nichijyou & Jyouhou): ${stats.NICHIJYOU.c + stats.JYOUHOU.c}/${stats.NICHIJYOU.t + stats.JYOUHOU.t}<br><br>`;
-            danboReport += `Diagram segi lima di atas menunjukkan peta kekuatanmu. Bagian mana yang menurutmu paling sulit tadi?`;
+            danboReport += `• Kanji: ${mainStats.KANJI.c}/${mainStats.KANJI.t}<br>`;
+            danboReport += `• Goi: ${mainStats.GOI.c}/${mainStats.GOI.t}<br>`;
+            danboReport += `• Bunpou (Grammar & Kumitate): ${mainStats.BUNPOU.c}/${mainStats.BUNPOU.t}<br>`;
+            danboReport += `• Dokkai (Tanbun & Choubun): ${mainStats.DOKKAI.c}/${mainStats.DOKKAI.t}<br>`;
+            danboReport += `• Choukai: ${mainStats.CHOUKAI.c}/${mainStats.CHOUKAI.t}<br><br>`;
+            danboReport += `Diagram sudah berbentuk segi lima! Jika ada bagian yang 0, berarti kategori tersebut tidak ada di soal ini atau semua jawabannya belum tepat. Semangat!`;
             
             addDanboMessage(danboReport);
 
-            // Kirim konteks ke API agar Danbo tahu performamu
-            chatHistory.push({ 
-                role: "system", 
-                content: `User selesai ujian. Skor ${score}/${totalSoal}. Detail persentase: Kanji(${chartData.Kanji}%), Goi(${chartData.Goi}%), Bunpou(${chartData.Bunpou}%), Dokkai(${chartData.Dokkai}%), Choukai(${chartData.Choukai}%). Berikan respon suportif.` 
-            });
+            chatHistory.push({ role: "system", content: `Skor ${score}/${totalSoal}. Persentase: Kanji ${dataPoin[0]}%, Goi ${dataPoin[1]}%, Bunpou ${dataPoin[2]}%, Dokkai ${dataPoin[3]}%, Choukai ${dataPoin[4]}%.` });
         }
 
-        function drawChart(dataMap) {
+        function drawChart(dataPoin) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
             if (window.myRadarChart) { window.myRadarChart.destroy(); }
 
             window.myRadarChart = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['Kanji', 'Goi', 'Bunpou', 'Dokkai', 'Choukai'], // Segi Lima
+                    // INI KUNCINYA: Labels harus selalu 5 item
+                    labels: ['Kanji', 'Goi', 'Bunpou', 'Dokkai', 'Choukai'], 
                     datasets: [{
                         label: '% Penguasaan',
-                        data: [dataMap.Kanji, dataMap.Goi, dataMap.Bunpou, dataMap.Dokkai, dataMap.Choukai],
+                        data: dataPoin, 
                         backgroundColor: 'rgba(52, 152, 219, 0.2)',
                         borderColor: '#3498db',
                         borderWidth: 3,
@@ -289,7 +301,7 @@
                 options: {
                     scales: {
                         r: {
-                            suggestedMin: 0, suggestedMax: 100,
+                            min: 0, max: 100,
                             ticks: { stepSize: 20, display: false },
                             pointLabels: { font: { size: 14, weight: 'bold' }, color: '#2c3e50' }
                         }
