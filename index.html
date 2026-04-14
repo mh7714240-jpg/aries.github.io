@@ -9,7 +9,6 @@
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --success: #27ae60; --error: #e74c3c; --white: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Layout Screens */
         #folder-screen, #year-screen, #file-screen { padding: 40px; text-align: center; overflow-y: auto; height: 100%; }
         .folder-grid { display: flex; justify-content: center; gap: 20px; margin-top: 30px; flex-wrap: wrap; }
         .folder-card { background: var(--white); padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); cursor: pointer; width: 140px; transition: 0.3s; border: 2px solid transparent; }
@@ -91,7 +90,7 @@
 
     <script>
         let state = { level: '', year: '', questions: [], answers: [], isDone: false };
-        const yearsN3 = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023'];
+        const allYears = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023'];
 
         function navTo(screenId) {
             ['folder-screen', 'year-screen', 'file-screen', 'exam-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
@@ -105,15 +104,9 @@
             const list = document.getElementById('year-list');
             list.innerHTML = '';
             
-            // Menampilkan folder tahun berdasarkan screenshot GitHub kamu
-            const activeYears = lvl === 'n3' ? yearsN3 : [];
-            if(activeYears.length === 0) {
-                list.innerHTML = "<p>Data untuk level ini segera hadir.</p>";
-            } else {
-                activeYears.forEach(y => {
-                    list.innerHTML += `<div class="folder-card" onclick="selectYear('${y}')">📁<br><br><b>${y}</b></div>`;
-                });
-            }
+            allYears.forEach(y => {
+                list.innerHTML += `<div class="folder-card" onclick="selectYear('${y}')">📁<br><br><b>${y}</b></div>`;
+            });
             navTo('year-screen');
         }
 
@@ -121,8 +114,6 @@
             state.year = yr;
             document.getElementById('year-title').innerText = `Folder Tahun ${yr}`;
             const container = document.getElementById('file-list-container');
-            
-            // Berdasarkan struktur: File .json ada di folder tahun
             container.innerHTML = `
                 <div class="file-item" onclick="startQuiz('${yr}', '07.json')">📄 07.json (Periode Juli)</div>
                 <div class="file-item" onclick="startQuiz('${yr}', '12.json')">📄 12.json (Periode Desember)</div>
@@ -137,7 +128,6 @@
             area.innerHTML = "<p style='text-align:center;'>Sedang memuat soal...</p>";
 
             try {
-                // Path: assets/n3/[tahun]/[file].json
                 const res = await fetch(`assets/${state.level}/${yr}/${fileName}`);
                 const data = await res.json();
                 const quiz = data[Object.keys(data)[0]];
@@ -148,11 +138,7 @@
                 area.innerHTML = '';
                 
                 state.questions.forEach((q, i) => {
-                    let opts = q.options.map((o, idx) => `
-                        <div class="option-item" id="q${i}-o${idx}" onclick="hitOption(${i},${idx})">
-                            ${idx+1}. ${o}
-                        </div>
-                    `).join('');
+                    let opts = q.options.map((o, idx) => `<div class="option-item" id="q${i}-o${idx}" onclick="hitOption(${i},${idx})">${idx+1}. ${o}</div>`).join('');
                     area.innerHTML += `<div class="question-card"><p><b>${i+1}.</b> ${q.q}</p>${opts}</div>`;
                 });
                 refreshProgress();
@@ -176,17 +162,22 @@
 
         function processResults() {
             state.isDone = true;
-            let correct = 0;
-            const detail = { KANJI:0, GOI:0, BUNPOU:0, KUMITATE:0, TANBUN:0, CHOUBUN:0, NICHIJYOU:0, JYOUHOU:0, TOTAL:{} };
+            let correctCount = 0;
+            const detail = { 
+                KANJI: {c:0, t:0}, GOI: {c:0, t:0}, BUNPOU: {c:0, t:0}, 
+                KUMITATE: {c:0, t:0}, TANBUN: {c:0, t:0}, CHOUBUN: {c:0, t:0} 
+            };
 
             state.questions.forEach((q, i) => {
                 let cat = (q.category || "GOI").toUpperCase().replace("BUNPOU_KUMITATE", "KUMITATE");
-                detail.TOTAL[cat] = (detail.TOTAL[cat] || 0) + 1;
+                if(!detail[cat]) detail[cat] = {c:0, t:0};
                 
+                detail[cat].t++;
                 document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
+                
                 if(state.answers[i] === q.correct) {
-                    correct++;
-                    detail[cat] = (detail[cat] || 0) + 1;
+                    correctCount++;
+                    detail[cat].c++;
                 } else if(state.answers[i] !== null) {
                     document.getElementById(`q${i}-o${state.answers[i]}`).classList.add('wrong');
                 }
@@ -194,13 +185,28 @@
 
             document.getElementById('submit-btn').classList.add('hidden');
             document.getElementById('result-area').classList.remove('hidden');
-            document.getElementById('score-display').innerText = `Skor Akhir: ${correct} / ${state.questions.length}`;
+            document.getElementById('score-display').innerText = `Skor Akhir: ${correctCount} / ${state.questions.length}`;
             
+            // GENERATE RINCIAN TEKS UNTUK DANBO
+            let rincianHtml = `<b>Rincian Penilaian:</b><br><ul>`;
+            for (const key in detail) {
+                if(detail[key].t > 0) {
+                    let label = key.charAt(0) + key.slice(1).toLowerCase();
+                    if(key === "BUNPOU") label = "Bunpou (Grammar)";
+                    if(key === "KUMITATE") label = "Bunpou (Kumitate)";
+                    if(key === "TANBUN" || key === "CHOUBUN") label = "Reading (Dokkai)";
+                    rincianHtml += `<li>${label}: ${detail[key].c}/${detail[key].t}</li>`;
+                }
+            }
+            rincianHtml += `</ul>`;
+
             toggleDanbo(true);
             document.getElementById('danbo-chat-box').innerHTML = `
-                <p><strong>Danbo:</strong> Ujian Selesai! Skor kamu <b>${correct}/${state.questions.length}</b>.</p>
+                <p><strong>Danbo:</strong> Ujian Selesai! Skor kamu <b>${correctCount}/${state.questions.length}</b>.</p>
+                ${rincianHtml}
                 <p>Terus semangat belajarnya, Muhammad Haris Munandar!</p>
             `;
+            
             renderChart(detail);
         }
 
@@ -212,10 +218,10 @@
                     datasets: [{
                         label: '% Penguasaan',
                         data: [
-                            d.TOTAL.KANJI ? (d.KANJI/d.TOTAL.KANJI)*100 : 0,
-                            d.TOTAL.GOI ? (d.GOI/d.TOTAL.GOI)*100 : 0,
-                            (d.TOTAL.BUNPOU+d.TOTAL.KUMITATE) ? ((d.BUNPOU+d.KUMITATE)/(d.TOTAL.BUNPOU+d.TOTAL.KUMITATE))*100 : 0,
-                            (d.TOTAL.TANBUN+d.TOTAL.CHOUBUN) ? ((d.TANBUN+d.CHOUBUN)/(d.TOTAL.TANBUN+d.TOTAL.CHOUBUN))*100 : 0,
+                            d.KANJI.t ? (d.KANJI.c/d.KANJI.t)*100 : 0,
+                            d.GOI.t ? (d.GOI.c/d.GOI.t)*100 : 0,
+                            (d.BUNPOU.t + d.KUMITATE.t) ? ((d.BUNPOU.c + d.KUMITATE.c)/(d.BUNPOU.t + d.KUMITATE.t))*100 : 0,
+                            (d.TANBUN.t + d.CHOUBUN.t) ? ((d.TANBUN.c + d.CHOUBUN.c)/(d.TANBUN.t + d.CHOUBUN.t))*100 : 0,
                             0
                         ],
                         backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: '#3498db', borderWidth: 2
