@@ -19,10 +19,11 @@
 
         /* Exam Area */
         #exam-screen { display: none; flex-direction: column; height: 100vh; }
-        #exam-content { flex: 1; padding: 20px; overflow-y: auto; transition: height 0.4s ease; padding-bottom: 150px; }
+        #exam-content { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 150px; }
         body.chat-open #exam-content { height: 60vh; flex: none; }
 
         .question-card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .question-image { max-width: 100%; height: auto; margin: 15px 0; border: 1px solid #eee; border-radius: 5px; display: block; }
         .options-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .option-item { padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; background: #fff; transition: 0.2s; }
         .option-item.selected { background: #e3f2fd; border-color: var(--accent); }
@@ -31,19 +32,18 @@
 
         .btn-finish { background: var(--success); color: white; padding: 15px 40px; border: none; border-radius: 30px; font-size: 18px; cursor: pointer; margin: 20px 0; }
         #result-box { display: none; margin: 30px 0; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); text-align: center; }
-        
-        .chart-container { max-width: 350px; margin: 20px auto; position: relative; }
+        .chart-container { max-width: 350px; margin: 20px auto; }
 
         /* Chat Icon & Sidebar */
-        #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; transition: 0.2s; }
+        #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; }
         #chat-icon img { width: 100%; height: 100%; object-fit: cover; }
-        #chat-sidebar { position: fixed; bottom: -40vh; left: 0; width: 100%; height: 40vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
+        #chat-sidebar { position: fixed; bottom: -45vh; left: 0; width: 100%; height: 45vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
         #chat-sidebar.active { bottom: 0; }
         .chat-header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
         #danbo-msg { padding: 15px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 14px; }
         .chat-input-area { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
         #user-input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 25px; outline: none; }
-        #send-btn { background: var(--accent); color: white; border: none; padding: 0 20px; margin-left: 10px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        #send-btn { background: var(--accent); color: white; border: none; padding: 0 20px; margin-left: 10px; border-radius: 20px; cursor: pointer; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -76,29 +76,25 @@
                 <button id="submit-btn" class="btn-finish" onclick="showResults()">Selesai & Cek Skor</button>
                 <div id="result-box">
                     <h2 id="final-score"></h2>
-                    <div class="chart-container">
-                        <canvas id="scoreChart"></canvas>
-                    </div>
-                    <button class="btn-finish" onclick="location.reload()">Selesai & Keluar</button>
+                    <div class="chart-container"><canvas id="scoreChart"></canvas></div>
+                    <button class="btn-finish" onclick="location.reload()">Tutup</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="chat-icon" onclick="openDanbo()">
-        <img src="assets/icon robot.jpeg" alt="Danbo Icon">
+        <img src="assets/icon robot.jpeg" alt="Danbo">
     </div>
 
     <div id="chat-sidebar">
         <div class="chat-header">
             <span>Danbo AI Helper</span>
-            <span style="cursor:pointer; font-size:20px;" onclick="closeDanbo()">✖</span>
+            <span style="cursor:pointer;" onclick="closeDanbo()">✖</span>
         </div>
-        <div id="danbo-msg">
-            <p><strong>Danbo:</strong> Semangat belajarnya! Ada yang ingin ditanyakan?</p>
-        </div>
+        <div id="danbo-msg"></div>
         <div class="chat-input-area">
-            <input type="text" id="user-input" placeholder="Tanyakan soal..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <input type="text" id="user-input" placeholder="Tanya Danbo..." onkeypress="if(event.key === 'Enter') sendMessage()">
             <button id="send-btn" onclick="sendMessage()">Kirim</button>
         </div>
     </div>
@@ -111,10 +107,13 @@
         let isFinished = false;
         let chatHistory = []; 
 
+        // Daftar file gambar yang ada di folder GitHub kamu (folder 2011)
+        const assetImages = ["19-23", "24", "25", "26", "27", "28-30", "31-33", "34-37", "38-39"];
+
         const mockFiles = { 
             'n1': ['n1-2024-12'], 
             'n2': [], 
-            'n3': ['2011/07', '2012/12', '2013/07', '2013/12', '2014/07', '2014/12', '2015/07', '2015/12', '2016/07', '2016/12' , '2017/07', '2017/12', '2018/07', '2018/12', '2019/07', '2019/12', '2020/07', '2020/12', '2021/07', '2021/12', '2022/07', '2022/12', '2023/07', '2023/12'] 
+            'n3': ['2011/07', '2012/12', '2013/07', '2013/12', '2014/07', '2014/12', '2015/07', '2015/12', '2016/07', '2016/12'] 
         };
 
         function showFolders() {
@@ -146,27 +145,52 @@
 
             try {
                 const response = await fetch(`assets/${level}/${fileName}.json`);
-                if (!response.ok) throw new Error("File tidak ditemukan");
                 const data = await response.json();
                 const key = Object.keys(data)[0]; 
                 currentQuestions = data[key].questions;
                 document.getElementById('exam-title-display').innerText = data[key].title;
                 totalSoal = currentQuestions.length;
                 currentAnswers = new Array(totalSoal).fill(null);
+                
+                // Tentukan path folder gambar (misal: assets/n3/2011/)
+                const yearFolder = fileName.split('/')[0];
+                const imgPathBase = `assets/${level}/${yearFolder}/`;
+
                 area.innerHTML = '';
                 currentQuestions.forEach((item, qIdx) => {
+                    const displayNum = qIdx + 1;
                     const card = document.createElement('div');
                     card.className = 'question-card';
+
+                    // Logika Menampilkan Gambar
+                    let imgHTML = '';
+                    const matchedImg = assetImages.find(name => {
+                        if (name.includes('-')) {
+                            const [start, end] = name.split('-').map(Number);
+                            return displayNum >= start && displayNum <= end;
+                        }
+                        return Number(name) === displayNum;
+                    });
+
+                    if (matchedImg) {
+                        imgHTML = `<img src="${imgPathBase}${matchedImg}.png" class="question-image" alt="Ilustrasi Soal ${displayNum}">`;
+                    }
+
                     let opts = '';
                     item.options.forEach((opt, oIdx) => {
                         opts += `<div class="option-item" id="q${qIdx}-o${oIdx}" onclick="pickOption(${qIdx}, ${oIdx})">${oIdx + 1}. ${opt}</div>`;
                     });
-                    card.innerHTML = `<p class="q-text"><strong>[SOAL ${qIdx + 1}]</strong><br>${item.q}</p><div class="options-list">${opts}</div>`;
+
+                    card.innerHTML = `
+                        <p><strong>[SOAL ${displayNum}]</strong><br>${item.q}</p>
+                        ${imgHTML}
+                        <div class="options-list">${opts}</div>
+                    `;
                     area.appendChild(card);
                 });
                 updateStatus();
             } catch (err) {
-                area.innerHTML = `<p style='color:red;'>Gagal memuat file soal: ${err.message}</p>`;
+                area.innerHTML = `<p style='color:red;'>Gagal memuat soal: ${err.message}</p>`;
             }
         }
 
@@ -186,125 +210,73 @@
         function showResults() {
             isFinished = true;
             let score = 0;
-            const stats = {
-                "KANJI": { correct: 0, total: 0 },
-                "GOI": { correct: 0, total: 0 },
-                "BUNPOU": { correct: 0, total: 0 },
-                "DOKKAI": { correct: 0, total: 0 },
-                "CHOUKAI": { correct: 0, total: 0 }
-            };
+            const stats = { "KANJI": {c:0, t:0}, "GOI": {c:0, t:0}, "BUNPOU": {c:0, t:0}, "DOKKAI": {c:0, t:0}, "CHOUKAI": {c:0, t:0} };
 
             currentQuestions.forEach((q, i) => {
-                let rawCat = (q.category || "GOI").toUpperCase();
-                let targetCat = "GOI"; 
-                if (rawCat.includes("KANJI")) targetCat = "KANJI";
-                else if (rawCat.includes("GOI") || rawCat.includes("VOCAB")) targetCat = "GOI";
-                else if (rawCat.includes("BUNPOU") || rawCat.includes("GRAMMAR")) targetCat = "BUNPOU";
-                else if (rawCat.includes("DOKKAI") || rawCat.includes("READING")) targetCat = "DOKKAI";
-                else if (rawCat.includes("CHOUKAI") || rawCat.includes("LISTENING")) targetCat = "CHOUKAI";
+                let cat = (q.category || "GOI").toUpperCase();
+                if (cat.includes("KANJI")) cat = "KANJI";
+                else if (cat.includes("VOCAB")) cat = "GOI";
+                else if (cat.includes("BUNPOU")) cat = "BUNPOU";
+                else if (cat.includes("DOKKAI")) cat = "DOKKAI";
 
-                stats[targetCat].total++;
-                const correctEl = document.getElementById(`q${i}-o${q.correct}`);
-                if (correctEl) correctEl.classList.add('correct');
+                if(stats[cat]) stats[cat].t++;
+                document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
 
                 if (currentAnswers[i] === q.correct) {
                     score++;
-                    stats[targetCat].correct++;
+                    if(stats[cat]) stats[cat].c++;
                 } else if (currentAnswers[i] !== null) {
-                    const wrongEl = document.getElementById(`q${i}-o${currentAnswers[i]}`);
-                    if (wrongEl) wrongEl.classList.add('wrong');
+                    document.getElementById(`q${i}-o${currentAnswers[i]}`).classList.add('wrong');
                 }
             });
 
             document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('result-box').style.display = 'block';
-            document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
-            
-            try { drawChart(stats); } catch (e) { console.error(e); }
-
-            // --- RESPON PROAKTIF DANBO ---
+            document.getElementById('final-score').innerText = `Skor: ${score} / ${totalSoal}`;
+            drawChart(stats);
             openDanbo();
-            let lowestCat = "KANJI";
-            let minPct = 101;
-            for (let cat in stats) {
-                let pct = stats[cat].total > 0 ? (stats[cat].correct / stats[cat].total) * 100 : 100;
-                if (pct < minPct && stats[cat].total > 0) { minPct = pct; lowestCat = cat; }
-            }
-
-            let danboMsg = `Halo! Skor kamu adalah <b>${score}/${totalSoal}</b>. `;
-            if (score/totalSoal >= 0.8) danboMsg += "Luar biasa! Kamu hebat sekali! 🔥";
-            else if (score/totalSoal >= 0.5) danboMsg += "Bagus! Terus berlatih ya agar lebih maksimal. 💪";
-            else danboMsg += "Tetap semangat! Jangan menyerah, Danbo siap bantu kamu belajar. ✨";
-
-            if (minPct < 60) danboMsg += `<br><br>Sepertinya bagian <b>${lowestCat}</b> agak sulit ya? Bagian mana yang paling membingungkan?`;
-            else danboMsg += "<br><br>Ada soal yang ingin kita bahas?";
-
-            addDanboMessage(`<strong>Danbo:</strong> ${danboMsg}`);
+            addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${score}/${totalSoal}</b>. Bagian mana yang sulit?`);
         }
 
-        function drawChart(stats) {
+        function drawChart(s) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
-            const getPct = (k) => stats[k].total > 0 ? Math.round((stats[k].correct / stats[k].total) * 100) : 0;
+            const data = [s.KANJI.t ? (s.KANJI.c/s.KANJI.t)*100 : 0, s.GOI.t ? (s.GOI.c/s.GOI.t)*100 : 0, s.BUNPOU.t ? (s.BUNPOU.c/s.BUNPOU.t)*100 : 0, s.DOKKAI.t ? (s.DOKKAI.c/s.DOKKAI.t)*100 : 0, 0];
             new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['Kanji', 'Vocabulary', 'Grammar', 'Reading', 'Choukai'],
-                    datasets: [{
-                        label: 'Penguasaan %',
-                        data: [getPct("KANJI"), getPct("GOI"), getPct("BUNPOU"), getPct("DOKKAI"), getPct("CHOUKAI")],
-                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                        borderColor: 'rgba(52, 152, 219, 1)',
-                        pointBackgroundColor: 'rgba(52, 152, 219, 1)',
-                        borderWidth: 2
-                    }]
+                    labels: ['Kanji', 'Vocabulary', 'Grammar', 'Reading', 'Listening'],
+                    datasets: [{ label: '% Masteri', data: data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: 'var(--accent)' }]
                 },
-                options: {
-                    scales: { r: { min: 0, max: 100, ticks: { display: false } } },
-                    plugins: { legend: { display: false } }
-                }
+                options: { scales: { r: { min: 0, max: 100 } } }
             });
         }
 
         async function sendMessage() {
-            const inputEl = document.getElementById('user-input');
-            const message = inputEl.value.trim();
-            if (!message) return;
-            addDanboMessage(`<strong>Kamu:</strong> ${message}`);
-            inputEl.value = '';
+            const input = document.getElementById('user-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            addDanboMessage(`<strong>Kamu:</strong> ${msg}`);
+            input.value = '';
             try {
-                const response = await fetch(BACKEND_URL, {
+                const res = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        userQuery: message, 
-                        history: chatHistory, 
-                        status: isFinished ? "POST_EXAM" : "DURING_EXAM",
-                        currentScore: isFinished ? document.getElementById('final-score').innerText : ""
-                    })
+                    body: JSON.stringify({ userQuery: msg, history: chatHistory })
                 });
-                const data = await response.json();
+                const data = await res.json();
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
-                chatHistory.push({ role: "user", content: message }, { role: "assistant", content: data.reply });
-            } catch (e) { addDanboMessage(`<strong>Danbo:</strong> Koneksi terputus.`); }
+                chatHistory.push({ role: "user", content: msg }, { role: "assistant", content: data.reply });
+            } catch (e) { addDanboMessage("<strong>Danbo:</strong> Gagal terhubung ke server."); }
         }
 
-        function addDanboMessage(text) {
-            const msgBox = document.getElementById('danbo-msg');
-            const p = document.createElement('p'); p.innerHTML = text;
-            msgBox.appendChild(p); msgBox.scrollTop = msgBox.scrollHeight;
+        function addDanboMessage(txt) {
+            const box = document.getElementById('danbo-msg');
+            const p = document.createElement('p'); p.innerHTML = txt;
+            box.appendChild(p); box.scrollTop = box.scrollHeight;
         }
 
-        function openDanbo() {
-            document.getElementById('chat-sidebar').classList.add('active');
-            document.getElementById('chat-icon').classList.add('hidden');
-            document.body.classList.add('chat-open');
-        }
-
-        function closeDanbo() {
-            document.getElementById('chat-sidebar').classList.remove('active');
-            document.getElementById('chat-icon').classList.remove('hidden');
-            document.body.classList.remove('chat-open');
-        }
+        function openDanbo() { document.getElementById('chat-sidebar').classList.add('active'); document.getElementById('chat-icon').classList.add('hidden'); document.body.classList.add('chat-open'); }
+        function closeDanbo() { document.getElementById('chat-sidebar').classList.remove('active'); document.getElementById('chat-icon').classList.remove('hidden'); document.body.classList.remove('chat-open'); }
     </script>
 </body>
 </html>
