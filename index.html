@@ -31,13 +31,14 @@
 
         .btn-finish { background: var(--success); color: white; padding: 15px 40px; border: none; border-radius: 30px; font-size: 18px; cursor: pointer; margin: 20px 0; }
         #result-box { display: none; margin: 30px 0; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); text-align: center; }
-        
+        .chart-container { max-width: 400px; margin: 20px auto; }
+
         #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; }
         #chat-icon img { width: 100%; height: 100%; object-fit: cover; }
         #chat-sidebar { position: fixed; bottom: -45vh; left: 0; width: 100%; height: 45vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
         #chat-sidebar.active { bottom: 0; }
         .chat-header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        #danbo-msg { padding: 15px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 14px; }
+        #danbo-msg { padding: 15px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 14px; line-height: 1.5; }
         .chat-input-area { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
         #user-input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 25px; outline: none; }
         #send-btn { background: var(--accent); color: white; border: none; padding: 0 20px; margin-left: 10px; border-radius: 20px; cursor: pointer; }
@@ -74,7 +75,7 @@
                 <div id="result-box">
                     <h2 id="final-score"></h2>
                     <div class="chart-container"><canvas id="scoreChart"></canvas></div>
-                    <button class="btn-finish" onclick="location.reload()">Tutup</button>
+                    <button class="btn-finish" onclick="location.reload()">Tutup Latihan</button>
                 </div>
             </div>
         </div>
@@ -104,7 +105,6 @@
         let isFinished = false;
         let chatHistory = []; 
 
-        // Mapping gambar ke nomor soal (khusus untuk sesi Bunpou/Dokkai)
         const assetImages = ["19-23", "24", "25", "26", "27", "28-30", "31-33", "34-37", "38-39"];
 
         const mockFiles = { 
@@ -150,22 +150,18 @@
                 currentAnswers = new Array(totalSoal).fill(null);
                 
                 const imgPathBase = `assets/${level}/${fileName.split('/')[0]}/`;
-
                 area.innerHTML = '';
-                let isSecondPart = false; // Flag untuk mendeteksi mulai Bunpou (nomor 1 lagi)
+                let isSecondPart = false; 
 
                 currentQuestions.forEach((item, qIdx) => {
-                    // Ambil nomor asli dari JSON (misal "1. 今度..." -> ambil angka 1)
                     const matchNumber = item.q.match(/^(\d+)\./);
                     const jsonNum = matchNumber ? parseInt(matchNumber[1]) : qIdx + 1;
 
-                    // Deteksi jika kita masuk ke bagian Bunpou (dimana nomor kembali ke 1 setelah sebelumnya besar)
                     if (qIdx > 0 && jsonNum === 1) isSecondPart = true;
 
                     const card = document.createElement('div');
                     card.className = 'question-card';
 
-                    // Logika Gambar (Hanya muncul jika sudah masuk bagian Bunpou/Dokkai)
                     let imgHTML = '';
                     if (isSecondPart) {
                         const matchedImg = assetImages.find(name => {
@@ -176,7 +172,7 @@
                             return Number(name) === jsonNum;
                         });
                         if (matchedImg) {
-                            imgHTML = `<img src="${imgPathBase}${matchedImg}.png" class="question-image">`;
+                            imgHTML = `<img src="${imgPathBase}${matchedImg}.png" class="question-image" alt="Ilustrasi Soal ${jsonNum}">`;
                         }
                     }
 
@@ -185,11 +181,7 @@
                         opts += `<div class="option-item" id="q${qIdx}-o${oIdx}" onclick="pickOption(${qIdx}, ${oIdx})">${oIdx + 1}. ${opt}</div>`;
                     });
 
-                    card.innerHTML = `
-                        <p>${item.q}</p>
-                        ${imgHTML}
-                        <div class="options-list">${opts}</div>
-                    `;
+                    card.innerHTML = `<p>${item.q}</p>${imgHTML}<div class="options-list">${opts}</div>`;
                     area.appendChild(card);
                 });
                 updateStatus();
@@ -219,39 +211,61 @@
             currentQuestions.forEach((q, i) => {
                 let cat = (q.category || "GOI").toUpperCase();
                 if (cat.includes("KANJI")) cat = "KANJI";
-                else if (cat.includes("VOCAB")) cat = "GOI";
+                else if (cat.includes("VOCAB") || cat.includes("GOI")) cat = "GOI";
                 else if (cat.includes("BUNPOU")) cat = "BUNPOU";
                 else if (cat.includes("DOKKAI")) cat = "DOKKAI";
 
                 if(stats[cat]) stats[cat].t++;
-                const correctEl = document.getElementById(`q${i}-o${q.correct}`);
-                if (correctEl) correctEl.classList.add('correct');
+                document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
 
                 if (currentAnswers[i] === q.correct) {
                     score++;
                     if(stats[cat]) stats[cat].c++;
                 } else if (currentAnswers[i] !== null) {
-                    const wrongEl = document.getElementById(`q${i}-o${currentAnswers[i]}`);
-                    if (wrongEl) wrongEl.classList.add('wrong');
+                    document.getElementById(`q${i}-o${currentAnswers[i]}`).classList.add('wrong');
                 }
             });
 
             document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('result-box').style.display = 'block';
-            document.getElementById('final-score').innerText = `Skor: ${score} / ${totalSoal}`;
+            document.getElementById('final-score').innerText = `Skor Akhir: ${score} / ${totalSoal}`;
+            
             drawChart(stats);
             openDanbo();
-            addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${score}/${totalSoal}</b>. Semangat!`);
+            
+            let lowScoreCategory = Object.keys(stats).reduce((a, b) => {
+                let rateA = stats[a].t ? stats[a].c / stats[a].t : 1;
+                let rateB = stats[b].t ? stats[b].c / stats[b].t : 1;
+                return rateA < rateB ? a : b;
+            });
+
+            let danboGreeting = `<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${score}/${totalSoal}</b>. `;
+            if (score / totalSoal > 0.8) {
+                danboGreeting += "Wah, luar biasa! Kamu hebat sekali. Tetap semangat belajarnya ya! ✨";
+            } else {
+                danboGreeting += `Kerja bagus! Bagian <b>${lowScoreCategory}</b> sepertinya agak sulit tadi. Jangan menyerah, Danbo siap bantu jelaskan bagian yang kamu belum paham!`;
+            }
+            addDanboMessage(danboGreeting);
+
+            chatHistory.push({ 
+                role: "system", 
+                content: `User baru saja selesai mengerjakan soal. Skor: ${score}/${totalSoal}. Bagian terlemah: ${lowScoreCategory}. Berikan respon sebagai Danbo yang suportif dan tawarkan diskusi.` 
+            });
         }
 
         function drawChart(s) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
-            const data = [s.KANJI.t ? (s.KANJI.c/s.KANJI.t)*100 : 0, s.GOI.t ? (s.GOI.c/s.GOI.t)*100 : 0, s.BUNPOU.t ? (s.BUNPOU.c/s.BUNPOU.t)*100 : 0, s.DOKKAI.t ? (s.DOKKAI.c/s.DOKKAI.t)*100 : 0, 0];
+            const data = [
+                s.KANJI.t ? (s.KANJI.c/s.KANJI.t)*100 : 0, 
+                s.GOI.t ? (s.GOI.c/s.GOI.t)*100 : 0, 
+                s.BUNPOU.t ? (s.BUNPOU.c/s.BUNPOU.t)*100 : 0, 
+                s.DOKKAI.t ? (s.DOKKAI.c/s.DOKKAI.t)*100 : 0
+            ];
             new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['Kanji', 'Vocabulary', 'Grammar', 'Reading', 'Listening'],
-                    datasets: [{ label: '% Masteri', data: data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: '#3498db' }]
+                    labels: ['Kanji', 'Vocabulary', 'Grammar', 'Reading'],
+                    datasets: [{ label: '% Penguasaan', data: data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: '#3498db' }]
                 },
                 options: { scales: { r: { min: 0, max: 100 } } }
             });
