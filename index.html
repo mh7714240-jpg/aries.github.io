@@ -9,7 +9,6 @@
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --success: #27ae60; --error: #e74c3c; }
         body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Layout Screens */
         #folder-screen, #file-screen { padding: 50px; text-align: center; overflow-y: auto; }
         .folder-grid { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
         .folder-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); cursor: pointer; width: 120px; transition: 0.2s; }
@@ -17,13 +16,13 @@
         .file-list { max-width: 500px; margin: 20px auto; background: white; border-radius: 10px; text-align: left; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .file-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; color: var(--accent); font-weight: bold; }
 
-        /* Exam Area */
         #exam-screen { display: none; flex-direction: column; height: 100vh; }
         #exam-content { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 150px; }
         body.chat-open #exam-content { height: 60vh; flex: none; }
 
         .question-card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .question-image { max-width: 100%; height: auto; margin: 15px 0; border: 1px solid #eee; border-radius: 5px; display: block; }
+        .question-image { max-width: 100%; height: auto; margin: 15px 0; border: 1px solid #ddd; border-radius: 8px; display: block; }
+        
         .options-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .option-item { padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; background: #fff; transition: 0.2s; }
         .option-item.selected { background: #e3f2fd; border-color: var(--accent); }
@@ -32,9 +31,7 @@
 
         .btn-finish { background: var(--success); color: white; padding: 15px 40px; border: none; border-radius: 30px; font-size: 18px; cursor: pointer; margin: 20px 0; }
         #result-box { display: none; margin: 30px 0; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); text-align: center; }
-        .chart-container { max-width: 350px; margin: 20px auto; }
-
-        /* Chat Icon & Sidebar */
+        
         #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; }
         #chat-icon img { width: 100%; height: 100%; object-fit: cover; }
         #chat-sidebar { position: fixed; bottom: -45vh; left: 0; width: 100%; height: 45vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
@@ -107,7 +104,7 @@
         let isFinished = false;
         let chatHistory = []; 
 
-        // Daftar file gambar yang ada di folder GitHub kamu (folder 2011)
+        // Mapping gambar ke nomor soal (khusus untuk sesi Bunpou/Dokkai)
         const assetImages = ["19-23", "24", "25", "26", "27", "28-30", "31-33", "34-37", "38-39"];
 
         const mockFiles = { 
@@ -152,28 +149,35 @@
                 totalSoal = currentQuestions.length;
                 currentAnswers = new Array(totalSoal).fill(null);
                 
-                // Tentukan path folder gambar (misal: assets/n3/2011/)
-                const yearFolder = fileName.split('/')[0];
-                const imgPathBase = `assets/${level}/${yearFolder}/`;
+                const imgPathBase = `assets/${level}/${fileName.split('/')[0]}/`;
 
                 area.innerHTML = '';
+                let isSecondPart = false; // Flag untuk mendeteksi mulai Bunpou (nomor 1 lagi)
+
                 currentQuestions.forEach((item, qIdx) => {
-                    const displayNum = qIdx + 1;
+                    // Ambil nomor asli dari JSON (misal "1. 今度..." -> ambil angka 1)
+                    const matchNumber = item.q.match(/^(\d+)\./);
+                    const jsonNum = matchNumber ? parseInt(matchNumber[1]) : qIdx + 1;
+
+                    // Deteksi jika kita masuk ke bagian Bunpou (dimana nomor kembali ke 1 setelah sebelumnya besar)
+                    if (qIdx > 0 && jsonNum === 1) isSecondPart = true;
+
                     const card = document.createElement('div');
                     card.className = 'question-card';
 
-                    // Logika Menampilkan Gambar
+                    // Logika Gambar (Hanya muncul jika sudah masuk bagian Bunpou/Dokkai)
                     let imgHTML = '';
-                    const matchedImg = assetImages.find(name => {
-                        if (name.includes('-')) {
-                            const [start, end] = name.split('-').map(Number);
-                            return displayNum >= start && displayNum <= end;
+                    if (isSecondPart) {
+                        const matchedImg = assetImages.find(name => {
+                            if (name.includes('-')) {
+                                const [start, end] = name.split('-').map(Number);
+                                return jsonNum >= start && jsonNum <= end;
+                            }
+                            return Number(name) === jsonNum;
+                        });
+                        if (matchedImg) {
+                            imgHTML = `<img src="${imgPathBase}${matchedImg}.png" class="question-image">`;
                         }
-                        return Number(name) === displayNum;
-                    });
-
-                    if (matchedImg) {
-                        imgHTML = `<img src="${imgPathBase}${matchedImg}.png" class="question-image" alt="Ilustrasi Soal ${displayNum}">`;
                     }
 
                     let opts = '';
@@ -182,7 +186,7 @@
                     });
 
                     card.innerHTML = `
-                        <p><strong>[SOAL ${displayNum}]</strong><br>${item.q}</p>
+                        <p>${item.q}</p>
                         ${imgHTML}
                         <div class="options-list">${opts}</div>
                     `;
@@ -210,7 +214,7 @@
         function showResults() {
             isFinished = true;
             let score = 0;
-            const stats = { "KANJI": {c:0, t:0}, "GOI": {c:0, t:0}, "BUNPOU": {c:0, t:0}, "DOKKAI": {c:0, t:0}, "CHOUKAI": {c:0, t:0} };
+            const stats = { "KANJI": {c:0, t:0}, "GOI": {c:0, t:0}, "BUNPOU": {c:0, t:0}, "DOKKAI": {c:0, t:0} };
 
             currentQuestions.forEach((q, i) => {
                 let cat = (q.category || "GOI").toUpperCase();
@@ -220,13 +224,15 @@
                 else if (cat.includes("DOKKAI")) cat = "DOKKAI";
 
                 if(stats[cat]) stats[cat].t++;
-                document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
+                const correctEl = document.getElementById(`q${i}-o${q.correct}`);
+                if (correctEl) correctEl.classList.add('correct');
 
                 if (currentAnswers[i] === q.correct) {
                     score++;
                     if(stats[cat]) stats[cat].c++;
                 } else if (currentAnswers[i] !== null) {
-                    document.getElementById(`q${i}-o${currentAnswers[i]}`).classList.add('wrong');
+                    const wrongEl = document.getElementById(`q${i}-o${currentAnswers[i]}`);
+                    if (wrongEl) wrongEl.classList.add('wrong');
                 }
             });
 
@@ -235,7 +241,7 @@
             document.getElementById('final-score').innerText = `Skor: ${score} / ${totalSoal}`;
             drawChart(stats);
             openDanbo();
-            addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${score}/${totalSoal}</b>. Bagian mana yang sulit?`);
+            addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${score}/${totalSoal}</b>. Semangat!`);
         }
 
         function drawChart(s) {
@@ -245,7 +251,7 @@
                 type: 'radar',
                 data: {
                     labels: ['Kanji', 'Vocabulary', 'Grammar', 'Reading', 'Listening'],
-                    datasets: [{ label: '% Masteri', data: data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: 'var(--accent)' }]
+                    datasets: [{ label: '% Masteri', data: data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: '#3498db' }]
                 },
                 options: { scales: { r: { min: 0, max: 100 } } }
             });
