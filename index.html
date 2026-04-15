@@ -21,7 +21,7 @@
         body.chat-open #exam-content { height: 60vh; flex: none; }
 
         .question-card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 800px; margin-left: auto; margin-right: auto; }
-        .q-image { display: block; max-width: 100%; height: auto; margin: 15px auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .q-image { display: block; max-width: 100%; height: auto; margin: 15px auto; border: 1px solid #ddd; border-radius: 8px; }
         .options-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .option-item { padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: 0.2s; }
         .option-item.selected { background: #e3f2fd; border-color: var(--accent); }
@@ -61,7 +61,7 @@
         <div id="exam-content">
             <div style="display:flex; justify-content:space-between; align-items: center; max-width: 800px; margin: auto;">
                 <button onclick="location.reload()" style="padding: 8px 15px; cursor:pointer;">⬅ Keluar</button>
-                <b id="progress-indicator" style="background: #fff; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Progres: 0 / 0</b>
+                <b id="progress-indicator">Progres: 0 / 0</b>
             </div>
             <h2 id="exam-title-display" style="text-align: center;"></h2>
             <div id="questions-area"></div>
@@ -100,6 +100,7 @@
 
         async function loadLevels() {
             try {
+                // Fetch manifest dari folder assets
                 const res = await fetch('assets/manifest.json');
                 const data = await res.json();
                 const container = document.querySelector('.folder-grid');
@@ -127,128 +128,136 @@
                     const item = document.createElement('div');
                     item.className = 'file-item';
                     item.innerText = `📄 ${levelData.name} - ${ex.label}`;
+                    // ex.path harus sesuai dengan struktur (contoh: "n3/2011/07.json")
                     item.onclick = () => startExam(ex.path, ex.label);
                     container.appendChild(item);
                 });
             });
         }
 
-       // --- BAGIAN START EXAM ---
-async function startExam(path, label) {
-    document.getElementById('file-screen').classList.add('hidden');
-    document.getElementById('exam-screen').style.display = 'flex';
-    document.getElementById('chat-icon').style.display = 'flex';
-    document.getElementById('exam-title-display').innerText = label;
-    const area = document.getElementById('questions-area');
-    area.innerHTML = "<p style='text-align:center;'>Menyusun soal...</p>";
+        async function startExam(path, label) {
+            document.getElementById('file-screen').classList.add('hidden');
+            document.getElementById('exam-screen').style.display = 'flex';
+            document.getElementById('chat-icon').style.display = 'flex';
+            document.getElementById('exam-title-display').innerText = label;
+            const area = document.getElementById('questions-area');
+            area.innerHTML = "<p style='text-align:center;'>Menyusun soal...</p>";
 
-    try {
-        const res = await fetch(`assets/${path}`);
-        const data = await res.json();
-        currentQuestions = [];
-        const categories = ['kanji', 'bunpou', 'dokkai', 'choukai'];
-        
-        categories.forEach(cat => {
-            if (data[cat]) {
-                data[cat].forEach(q => {
-                    currentQuestions.push({ ...q, categoryGroup: cat });
-                });
-            }
-        });
-
-        totalSoal = currentQuestions.length;
-        currentAnswers = new Array(totalSoal).fill(null);
-        isFinished = false; // Reset status saat mulai ujian baru
-        area.innerHTML = '';
-
-        currentQuestions.forEach((q, i) => {
-            const card = document.createElement('div');
-            card.className = 'question-card';
-            
-            // LOGIKA GAMBAR: Menghilangkan label biru "Soal No X"
-            let imgHtml = "";
-            if (q.image) {
-                const pathParts = path.split('/');
-                const fileName = pathParts.pop(); 
-                const folderPath = pathParts.join('/'); 
-                const imageFolder = fileName.replace('.json', ''); 
-                const src = `assets/${folderPath}/${imageFolder}/${q.image}`;
+            try {
+                // Memanggil file JSON soal
+                const res = await fetch(`assets/${path}`);
+                if (!res.ok) throw new Error("File tidak ditemukan");
+                const data = await res.json();
                 
-                imgHtml = `
-                    <small style="color:var(--accent); font-weight:bold; text-transform:uppercase;">[${q.categoryGroup}]</small>
-                    <img src="${src}" class="q-image" onerror="this.style.display='none';">
-                `;
-            } else {
-                imgHtml = `<small style="color:var(--accent); font-weight:bold; text-transform:uppercase;">[${q.categoryGroup}]</small>`;
-            }
+                currentQuestions = [];
+                const categories = ['kanji', 'bunpou', 'dokkai', 'choukai'];
+                
+                categories.forEach(cat => {
+                    if (data[cat]) {
+                        data[cat].forEach(q => {
+                            currentQuestions.push({ ...q, categoryGroup: cat });
+                        });
+                    }
+                });
 
-            let opts = '';
-            q.options.forEach((opt, o) => {
-                opts += `<div class="option-item" id="q${i}-o${o}" onclick="pickOption(${i}, ${o})">${o+1}. ${opt}</div>`;
+                totalSoal = currentQuestions.length;
+                currentAnswers = new Array(totalSoal).fill(null);
+                isFinished = false;
+                area.innerHTML = '';
+
+                currentQuestions.forEach((q, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'question-card';
+                    
+                    let imgHtml = "";
+                    if (q.image) {
+                        // Perbaikan logika path gambar agar sesuai dengan screenshot GitHub kamu
+                        const pathParts = path.split('/'); // ["n3", "2011", "07.json"]
+                        const fileName = pathParts.pop(); // "07.json"
+                        const folderPath = pathParts.join('/'); // "n3/2011"
+                        const imageFolder = fileName.replace('.json', ''); // "07"
+                        
+                        const src = `assets/${folderPath}/${imageFolder}/${q.image}`;
+                        imgHtml = `
+                            <small style="color:var(--accent); font-weight:bold; text-transform:uppercase;">[${q.categoryGroup}]</small>
+                            <img src="${src}" class="q-image" onerror="this.style.display='none';">
+                        `;
+                    } else {
+                        imgHtml = `<small style="color:var(--accent); font-weight:bold; text-transform:uppercase;">[${q.categoryGroup}]</small>`;
+                    }
+
+                    let opts = '';
+                    q.options.forEach((opt, o) => {
+                        opts += `<div class="option-item" id="q${i}-o${o}" onclick="pickOption(${i}, ${o})">${o+1}. ${opt}</div>`;
+                    });
+
+                    card.innerHTML = `
+                        ${imgHtml}
+                        <p style="font-size: 1.1em; margin-top: 10px;"><b>${q.q}</b></p>
+                        <div class="options-list">${opts}</div>
+                    `;
+                    area.appendChild(card);
+                });
+                updateStatus();
+            } catch (e) {
+                console.error(e);
+                area.innerHTML = `<p style='color:red; text-align:center;'>Gagal memuat file soal.<br><small>${e.message}</small></p>`;
+            }
+        }
+
+        function pickOption(qIdx, oIdx) {
+            if (isFinished) return;
+            currentAnswers[qIdx] = oIdx;
+            const options = document.querySelectorAll(`[id^="q${qIdx}-o"]`);
+            options.forEach(el => el.classList.remove('selected'));
+            document.getElementById(`q${qIdx}-o${oIdx}`).classList.add('selected');
+            updateStatus();
+        }
+
+        function updateStatus() {
+            const answered = currentAnswers.filter(a => a !== null).length;
+            document.getElementById('progress-indicator').innerText = `Progres: ${answered} / ${totalSoal}`;
+        }
+
+        function showResults() {
+            if (currentAnswers.includes(null)) {
+                if (!confirm("Masih ada soal yang belum dijawab. Selesai sekarang?")) return;
+            }
+            isFinished = true;
+            let totalBenar = 0;
+            const stats = { kanji: {c:0, t:0}, bunpou: {c:0, t:0}, dokkai: {c:0, t:0}, choukai: {c:0, t:0} };
+
+            currentQuestions.forEach((q, i) => {
+                const isCorrect = currentAnswers[i] === q.correct;
+                if (isCorrect) {
+                    totalBenar++;
+                    stats[q.categoryGroup].c++;
+                }
+                stats[q.categoryGroup].t++;
+
+                const options = document.querySelectorAll(`[id^="q${i}-o"]`);
+                options.forEach((el, oIdx) => {
+                    el.classList.remove('selected');
+                    if (oIdx === q.correct) el.classList.add('correct');
+                    else if (oIdx === currentAnswers[i]) el.classList.add('wrong');
+                });
             });
 
-            card.innerHTML = `
-                ${imgHtml}
-                <p style="font-size: 1.1em; margin-top: 10px;"><b>${q.q}</b></p>
-                <div class="options-list">${opts}</div>
-            `;
-            area.appendChild(card);
-        });
-        updateStatus();
-    } catch (e) {
-        console.error("Error loading exam:", e);
-        area.innerHTML = "<p style='color:red; text-align:center;'>Gagal memuat file soal. Cek folder assets Anda.</p>";
-    }
-}
+            const pilarScores = [
+                stats.kanji.t ? (stats.kanji.c/stats.kanji.t)*100 : 0,
+                stats.bunpou.t ? (stats.bunpou.c/stats.bunpou.t)*100 : 0,
+                stats.dokkai.t ? (stats.dokkai.c/stats.dokkai.t)*100 : 0,
+                stats.choukai.t ? (stats.choukai.c/stats.choukai.t)*100 : 0
+            ];
 
-// --- BAGIAN SHOW RESULTS ---
-function showResults() {
-    if (currentAnswers.includes(null)) {
-        if (!confirm("Masih ada soal yang belum dijawab. Selesai sekarang?")) return;
-    }
-    
-    isFinished = true;
-    let totalBenar = 0;
-    const stats = { kanji: {c:0, t:0}, bunpou: {c:0, t:0}, dokkai: {c:0, t:0}, choukai: {c:0, t:0} };
-
-    currentQuestions.forEach((q, i) => {
-        const isCorrect = currentAnswers[i] === q.correct;
-        if (isCorrect) {
-            totalBenar++;
-            stats[q.categoryGroup].c++;
+            document.getElementById('result-box').style.display = 'block';
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
+            drawChart(pilarScores);
+            openDanbo();
+            addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${totalBenar}/${totalSoal}</b>. Ada bagian yang bingung?`);
+            document.getElementById('exam-content').scrollTo({top: 0, behavior: 'smooth'});
         }
-        stats[q.categoryGroup].t++;
-
-        // Visual feedback jawaban benar/salah
-        const options = document.querySelectorAll(`[id^="q${i}-o"]`);
-        options.forEach((el, oIdx) => {
-            el.classList.remove('selected'); // Bersihkan seleksi biru
-            if (oIdx === q.correct) {
-                el.classList.add('correct'); // Hijau untuk yang benar
-            } else if (oIdx === currentAnswers[i]) {
-                el.classList.add('wrong'); // Merah untuk yang salah pilih
-            }
-        });
-    });
-
-    const pilarScores = [
-        stats.kanji.t ? (stats.kanji.c/stats.kanji.t)*100 : 0,
-        stats.bunpou.t ? (stats.bunpou.c/stats.bunpou.t)*100 : 0,
-        stats.dokkai.t ? (stats.dokkai.c/stats.dokkai.t)*100 : 0,
-        stats.choukai.t ? (stats.choukai.c/stats.choukai.t)*100 : 0
-    ];
-
-    document.getElementById('result-box').style.display = 'block';
-    document.getElementById('submit-btn').style.display = 'none';
-    document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
-    
-    drawChart(pilarScores);
-    openDanbo();
-    addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${totalBenar}/${totalSoal}</b>. Bagian mana yang ingin kamu pelajari lebih lanjut?`);
-    
-    // Auto-scroll ke atas untuk lihat hasil
-    document.getElementById('exam-content').scrollTo({top: 0, behavior: 'smooth'});
-}
 
         function drawChart(dataPoin) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
