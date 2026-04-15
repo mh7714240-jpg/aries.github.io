@@ -49,13 +49,12 @@
     <div id="folder-screen">
         <h1>Materi JLPT</h1>
         <div class="folder-grid">
-            <div class="folder-card" onclick="openFolder('n3')">📁<br>N3</div>
-        </div>
+            </div>
     </div>
 
     <div id="file-screen" class="hidden">
         <button onclick="showFolders()">⬅ Kembali</button>
-        <h2 id="folder-title">Arsip Soal N3</h2>
+        <h2 id="folder-title">Arsip Soal</h2>
         <div class="file-list" id="file-container"></div>
     </div>
 
@@ -98,87 +97,96 @@
         let totalSoal = 0;
         let isFinished = false;
         let chatHistory = [];
-        let currentLevel = "";
-        let currentFilePath = "";
+        let myRadarChart = null;
 
-        const mockFiles = { 'n3': ['2011/07', '2011/12', '2012/07'] };
-
-        function showFolders() { 
-            document.getElementById('folder-screen').classList.remove('hidden'); 
-            document.getElementById('file-screen').classList.add('hidden'); 
+        // 1. LOAD MANIFEST
+        async function loadLevels() {
+            try {
+                const res = await fetch('assets/manifest.json');
+                if (!res.ok) throw new Error("Manifest tidak ditemukan");
+                const data = await res.json();
+                const container = document.querySelector('.folder-grid');
+                container.innerHTML = '';
+                
+                data.levels.forEach(lvl => {
+                    const card = document.createElement('div');
+                    card.className = 'folder-card';
+                    card.innerHTML = `📁<br>${lvl.name}`;
+                    card.onclick = () => openLevelFiles(lvl);
+                    container.appendChild(card);
+                });
+            } catch (e) {
+                console.error("Gagal memuat manifest:", e);
+                document.querySelector('.folder-grid').innerHTML = "<p>Gagal memuat daftar materi.</p>";
+            }
         }
 
-        function openFolder(level) {
-            currentLevel = level;
+        function openLevelFiles(levelData) {
             document.getElementById('folder-screen').classList.add('hidden');
             document.getElementById('file-screen').classList.remove('hidden');
-            const container = document.getElementById('file-container'); 
+            document.getElementById('folder-title').innerText = `Arsip Soal ${levelData.name}`;
+            const container = document.getElementById('file-container');
             container.innerHTML = '';
-            
-            mockFiles[level].forEach(file => {
-                const item = document.createElement('div');
-                item.className = 'file-item'; 
-                item.innerText = "📄 JLPT " + level.toUpperCase() + " - Periode " + file;
-                item.onclick = () => startExam(level, file); 
-                container.appendChild(item);
+
+            levelData.years.forEach(y => {
+                y.exams.forEach(ex => {
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerText = `📄 ${levelData.name} - ${ex.label}`;
+                    item.onclick = () => startExam(ex.path, ex.label);
+                    container.appendChild(item);
+                });
             });
         }
 
-        // Fungsi pembantu untuk menentukan nama gambar berdasarkan nomor soal
-        function getQuestionImage(qText) {
-            const match = qText.match(/^(\d+)\./);
-            if (!match) return null;
-            const n = parseInt(match[1]);
-            if (n >= 19 && n <= 23) return "19-23.png";
-            if (n >= 24 && n <= 27) return `${n}.png`;
-            if (n >= 28 && n <= 30) return "28-30.png";
-            if (n >= 31 && n <= 33) return "31-33.png";
-            if (n >= 34 && n <= 37) return "34-37.png";
-            if (n >= 38 && n <= 39) return "38-39.png";
-            return null;
-        }
-
-        async function startExam(level, file) {
-            currentFilePath = file; // Contoh: "2011/07"
+        // 2. START EXAM & MERGE CATEGORIES
+        async function startExam(path, label) {
             document.getElementById('file-screen').classList.add('hidden');
             document.getElementById('exam-screen').style.display = 'flex';
             document.getElementById('chat-icon').style.display = 'flex';
+            document.getElementById('exam-title-display').innerText = label;
             
-            const area = document.getElementById('questions-area'); 
-            area.innerHTML = "<p style='text-align:center;'>Memuat soal dari GitHub...</p>";
-            
+            const area = document.getElementById('questions-area');
+            area.innerHTML = "<p style='text-align:center;'>Menyusun soal...</p>";
+
             try {
-                // Pastikan path JSON benar: assets/n3/2011/07.json
-                const res = await fetch(`assets/${level}/${file}.json`);
+                const res = await fetch(`assets/${path}`);
                 const data = await res.json();
                 
-                // Cari array questions di dalam objek JSON
-                const key = Object.keys(data).find(k => data[k].questions);
-                if (!key) throw new Error("Format JSON tidak dikenali");
+                // Menggabungkan kategori
+                currentQuestions = [];
+                const categories = ['kanji', 'bunpou', 'dokkai', 'choukai'];
+                
+                categories.forEach(cat => {
+                    if (data[cat]) {
+                        data[cat].forEach(q => {
+                            currentQuestions.push({ ...q, categoryGroup: cat });
+                        });
+                    }
+                });
 
-                currentQuestions = data[key].questions;
                 totalSoal = currentQuestions.length;
                 currentAnswers = new Array(totalSoal).fill(null);
-                
                 area.innerHTML = '';
+
                 currentQuestions.forEach((q, i) => {
-                    const card = document.createElement('div'); 
+                    const card = document.createElement('div');
                     card.className = 'question-card';
                     
-                    // Logika Gambar Pendukung
+                    // Folder Image Logic: assets/n3/2011/07/kanji/1.png
                     let imgHtml = "";
-                    const imgName = getQuestionImage(q.q);
-                    if (imgName) {
-                        // Path gambar: assets/n3/2011/07/19-23.png
-                        imgHtml = `<img src="assets/${level}/${file}/${imgName}" class="q-image" onerror="this.style.display='none'">`;
+                    if (q.image) {
+                        const baseDir = path.replace('.json', '');
+                        imgHtml = `<img src="assets/${baseDir}/${q.categoryGroup}/${q.image}" class="q-image" onerror="this.style.display='none'">`;
                     }
 
                     let opts = '';
-                    q.options.forEach((opt, o) => { 
-                        opts += `<div class="option-item" id="q${i}-o${o}" onclick="pickOption(${i}, ${o})">${o+1}. ${opt}</div>`; 
+                    q.options.forEach((opt, o) => {
+                        opts += `<div class="option-item" id="q${i}-o${o}" onclick="pickOption(${i}, ${o})">${o+1}. ${opt}</div>`;
                     });
-                    
+
                     card.innerHTML = `
+                        <small style="color:var(--accent); font-weight:bold; text-transform:uppercase;">[${q.categoryGroup}]</small>
                         ${imgHtml}
                         <p><b>${q.q}</b></p>
                         <div class="options-list">${opts}</div>
@@ -186,60 +194,53 @@
                     area.appendChild(card);
                 });
                 updateStatus();
-            } catch (e) { 
-                area.innerHTML = `<p style='color:red; text-align:center;'>Gagal memuat soal.<br>Pastikan file tersedia di: assets/${level}/${file}.json</p>`; 
+            } catch (e) {
+                console.error(e);
+                area.innerHTML = "<p style='color:red; text-align:center;'>Gagal memuat file soal. Pastikan path di manifest benar.</p>";
             }
         }
 
-        function pickOption(q, o) { 
-            if(isFinished) return; 
-            currentAnswers[q] = o; 
-            document.querySelectorAll(`[id^="q${q}-o"]`).forEach(el => el.classList.remove('selected')); 
-            document.getElementById(`q${q}-o${o}`).classList.add('selected'); 
-            updateStatus(); 
+        function pickOption(q, o) {
+            if(isFinished) return;
+            currentAnswers[q] = o;
+            document.querySelectorAll(`[id^="q${q}-o"]`).forEach(el => el.classList.remove('selected'));
+            document.getElementById(`q${q}-o${o}`).classList.add('selected');
+            updateStatus();
         }
 
-        function updateStatus() { 
+        function updateStatus() {
             const filled = currentAnswers.filter(a => a !== null).length;
-            document.getElementById('progress-indicator').innerText = `Progres: ${filled} / ${totalSoal}`; 
+            document.getElementById('progress-indicator').innerText = `Progres: ${filled} / ${totalSoal}`;
         }
 
+        // 3. RESULTS & CHART
         function showResults() {
             if (currentAnswers.includes(null)) {
-                if (!confirm("Beberapa soal belum dijawab. Yakin ingin selesai?")) return;
+                if (!confirm("Masih ada soal yang belum dijawab. Selesai sekarang?")) return;
             }
 
             isFinished = true;
             let totalBenar = 0;
-            
-            const stats = {
-                KANJI: {c:0, t:0}, GOI: {c:0, t:0},
-                BUNPOU_KUMITATE: {c:0, t:0}, BUNPOU: {c:0, t:0},
-                TANBUN: {c:0, t:0}, CHOUBUN: {c:0, t:0},
-                NICHIJYOU: {c:0, t:0}, JYOUHOU: {c:0, t:0}
-            };
+            const stats = { kanji: {c:0, t:0}, bunpou: {c:0, t:0}, dokkai: {c:0, t:0}, choukai: {c:0, t:0} };
 
             currentQuestions.forEach((q, i) => {
-                let rawCat = (q.category || "GOI").toUpperCase().trim();
-                if (!stats[rawCat]) rawCat = "GOI";
-
-                stats[rawCat].t++;
-                document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
+                const cat = q.categoryGroup;
+                if (stats[cat]) stats[cat].t++;
                 
-                if(currentAnswers[i] === q.correct) {
+                document.getElementById(`q${i}-o${q.correct}`).classList.add('correct');
+                if (currentAnswers[i] === q.correct) {
                     totalBenar++;
-                    stats[rawCat].c++;
-                } else if(currentAnswers[i] !== null) {
+                    if (stats[cat]) stats[cat].c++;
+                } else if (currentAnswers[i] !== null) {
                     document.getElementById(`q${i}-o${currentAnswers[i]}`).classList.add('wrong');
                 }
             });
 
             const pilarScores = [
-                stats.KANJI.t ? (stats.KANJI.c/stats.KANJI.t)*100 : 0,
-                stats.GOI.t ? (stats.GOI.c/stats.GOI.t)*100 : 0,
-                (stats.BUNPOU.t + stats.BUNPOU_KUMITATE.t) > 0 ? ((stats.BUNPOU.c + stats.BUNPOU_KUMITATE.c)/(stats.BUNPOU.t + stats.BUNPOU_KUMITATE.t))*100 : 0,
-                (stats.TANBUN.t + stats.CHOUBUN.t) > 0 ? ((stats.TANBUN.c + stats.CHOUBUN.c)/(stats.TANBUN.t + stats.CHOUBUN.t))*100 : 0,
-                (stats.NICHIJYOU.t + stats.JYOUHOU.t) > 0 ? ((stats.NICHIJYOU.c + stats.JYOUHOU.c)/(stats.NICHIJYOU.t + stats.JYOUHOU.t))*100 : 0
+                stats.kanji.t ? (stats.kanji.c/stats.kanji.t)*100 : 0,
+                stats.bunpou.t ? (stats.bunpou.c/stats.bunpou.t)*100 : 0,
+                stats.dokkai.t ? (stats.dokkai.c/stats.dokkai.t)*100 : 0,
+                stats.choukai.t ? (stats.choukai.c/stats.choukai.t)*100 : 0
             ];
 
             document.getElementById('result-box').style.display = 'block';
@@ -247,43 +248,47 @@
             document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
             drawChart(pilarScores);
             
-            let report = `<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${totalBenar}/${totalSoal}</b>.<br><br>`;
-            report += `<b>Rincian Penilaian:</b><br>`;
-            if(stats.KANJI.t) report += `• Kanji: ${stats.KANJI.c}/${stats.KANJI.t}<br>`;
-            if(stats.GOI.t) report += `• Goi: ${stats.GOI.c}/${stats.GOI.t}<br>`;
-            if(stats.BUNPOU.t || stats.BUNPOU_KUMITATE.t) report += `• Bunpou: ${stats.BUNPOU.c + stats.BUNPOU_KUMITATE.c}/${stats.BUNPOU.t + stats.BUNPOU_KUMITATE.t}<br>`;
-            if(stats.TANBUN.t || stats.CHOUBUN.t) report += `• Dokkai: ${stats.TANBUN.c + stats.CHOUBUN.c}/${stats.TANBUN.t + stats.CHOUBUN.t}<br>`;
+            let detailMsg = `<strong>Danbo:</strong> Ujian Selesai! Skor: <b>${totalBenar}/${totalSoal}</b>.<br><br>`;
+            detailMsg += `<b>Rincian per Bagian:</b><br>`;
+            detailMsg += `• Kanji & Goi: ${stats.kanji.c}/${stats.kanji.t}<br>`;
+            detailMsg += `• Bunpou: ${stats.bunpou.c}/${stats.bunpou.t}<br>`;
+            detailMsg += `• Dokkai: ${stats.dokkai.c}/${stats.dokkai.t}<br>`;
+            if(stats.choukai.t > 0) detailMsg += `• Choukai: ${stats.choukai.c}/${stats.choukai.t}<br>`;
             
             openDanbo();
-            addDanboMessage(report + "<br>Terus semangat belajarnya!");
+            addDanboMessage(detailMsg + "<br>Ada yang ingin kamu tanyakan tentang soal tadi?");
         }
 
         function drawChart(dataPoin) {
             const ctx = document.getElementById('scoreChart').getContext('2d');
-            if (window.myRadarChart) window.myRadarChart.destroy();
-            window.myRadarChart = new Chart(ctx, {
+            if (myRadarChart) myRadarChart.destroy();
+            myRadarChart = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['Kanji', 'Goi', 'Bunpou', 'Dokkai', 'Choukai'],
+                    labels: ['Kanji', 'Bunpou', 'Dokkai', 'Choukai'],
                     datasets: [{
                         label: '% Penguasaan',
                         data: dataPoin,
-                        backgroundColor: 'rgba(39, 174, 96, 0.2)', borderColor: '#27ae60', borderWidth: 3, pointBackgroundColor: '#27ae60'
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: '#3498db',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#3498db'
                     }]
                 },
                 options: { 
                     scales: { 
                         r: { 
-                            min: 0, max: 100, 
-                            ticks: { display: false, stepSize: 20 },
-                            pointLabels: { font: { size: 12, weight: 'bold' } }
+                            min: 0, 
+                            max: 100,
+                            ticks: { display: false, stepSize: 20 }
                         } 
-                    }, 
-                    plugins: { legend: { display: false } } 
+                    },
+                    plugins: { legend: { display: false } }
                 }
             });
         }
 
+        // 4. CHAT SYSTEM
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const msg = input.value.trim(); if(!msg) return;
@@ -323,6 +328,14 @@
             }
             document.body.classList.remove('chat-open'); 
         }
+
+        function showFolders() { 
+            document.getElementById('folder-screen').classList.remove('hidden'); 
+            document.getElementById('file-screen').classList.add('hidden'); 
+        }
+
+        // Jalankan saat load
+        window.onload = loadLevels;
     </script>
 </body>
 </html>
