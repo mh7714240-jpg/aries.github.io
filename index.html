@@ -18,7 +18,7 @@
 
         #exam-screen { display: none; flex-direction: column; height: 100vh; }
         #exam-content { flex: 1; padding: 20px; overflow-y: auto; padding-bottom: 150px; }
-        body.chat-open #exam-content { height: 60vh; flex: none; }
+        body.chat-open #exam-content { height: 40vh; flex: none; } /* Disesuaikan agar layar soal tetap terlihat sedikit */
 
         .question-card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 800px; margin-left: auto; margin-right: auto; }
         .q-image { display: block; max-width: 100%; height: auto; margin: 15px auto; border: 1px solid #ddd; border-radius: 8px; }
@@ -34,7 +34,7 @@
 
         #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; }
         #chat-icon img { width: 100%; height: 100%; object-fit: cover; }
-        #chat-sidebar { position: fixed; bottom: -50vh; left: 0; width: 100%; height: 50vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
+        #chat-sidebar { position: fixed; bottom: -55vh; left: 0; width: 100%; height: 50vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
         #chat-sidebar.active { bottom: 0; }
         .chat-header { background: var(--primary); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
         #danbo-msg { padding: 15px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 14px; line-height: 1.6; }
@@ -100,7 +100,6 @@
 
         async function loadLevels() {
             try {
-                // Fetch manifest dari folder assets
                 const res = await fetch('assets/manifest.json');
                 const data = await res.json();
                 const container = document.querySelector('.folder-grid');
@@ -128,7 +127,6 @@
                     const item = document.createElement('div');
                     item.className = 'file-item';
                     item.innerText = `📄 ${levelData.name} - ${ex.label}`;
-                    // ex.path harus sesuai dengan struktur (contoh: "n3/2011/07.json")
                     item.onclick = () => startExam(ex.path, ex.label);
                     container.appendChild(item);
                 });
@@ -144,9 +142,8 @@
             area.innerHTML = "<p style='text-align:center;'>Menyusun soal...</p>";
 
             try {
-                // Memanggil file JSON soal
                 const res = await fetch(`assets/${path}`);
-                if (!res.ok) throw new Error("File tidak ditemukan");
+                if (!res.ok) throw new Error("File soal tidak ditemukan");
                 const data = await res.json();
                 
                 currentQuestions = [];
@@ -165,22 +162,23 @@
                 isFinished = false;
                 area.innerHTML = '';
 
+                // --- LOGIKA PERBAIKAN PATH GAMBAR ---
+                const pathParts = path.split('/'); 
+                const fileName = pathParts.pop(); 
+                const folderPath = pathParts.join('/'); 
+                const imageFolder = fileName.replace('.json', ''); 
+
                 currentQuestions.forEach((q, i) => {
                     const card = document.createElement('div');
                     card.className = 'question-card';
                     
                     let imgHtml = "";
                     if (q.image) {
-                        // Perbaikan logika path gambar agar sesuai dengan screenshot GitHub kamu
-                        const pathParts = path.split('/'); // ["n3", "2011", "07.json"]
-                        const fileName = pathParts.pop(); // "07.json"
-                        const folderPath = pathParts.join('/'); // "n3/2011"
-                        const imageFolder = fileName.replace('.json', ''); // "07"
-                        
+                        // Pastikan folder di GitHub: assets/n3/2011/07/24.png
                         const src = `assets/${folderPath}/${imageFolder}/${q.image}`;
                         imgHtml = `
                             <small style="color:var(--accent); font-weight:bold; text-transform:uppercase;">[${q.categoryGroup}]</small>
-                            <img src="${src}" class="q-image" onerror="this.style.display='none';">
+                            <img src="${src}" class="q-image" onerror="this.style.display='none'; console.warn('Missing image: ${src}');">
                         `;
                     } else {
                         imgHtml = `<small style="color:var(--accent); font-weight:bold; text-transform:uppercase;">[${q.categoryGroup}]</small>`;
@@ -205,6 +203,7 @@
             }
         }
 
+        // Fitur Pick Option, Update Status, Draw Chart, Chat Danbo dsb tetap dipertahankan
         function pickOption(qIdx, oIdx) {
             if (isFinished) return;
             currentAnswers[qIdx] = oIdx;
