@@ -133,7 +133,8 @@
             });
         }
 
-        async function startExam(path, label) {
+       // --- BAGIAN START EXAM ---
+async function startExam(path, label) {
     document.getElementById('file-screen').classList.add('hidden');
     document.getElementById('exam-screen').style.display = 'flex';
     document.getElementById('chat-icon').style.display = 'flex';
@@ -157,20 +158,19 @@
 
         totalSoal = currentQuestions.length;
         currentAnswers = new Array(totalSoal).fill(null);
+        isFinished = false; // Reset status saat mulai ujian baru
         area.innerHTML = '';
 
         currentQuestions.forEach((q, i) => {
             const card = document.createElement('div');
             card.className = 'question-card';
             
-            // --- LOGIKA GAMBAR & LABEL (PERBAIKAN) ---
+            // LOGIKA GAMBAR: Menghilangkan label biru "Soal No X"
             let imgHtml = "";
             if (q.image) {
-                // Mengambil folder path yang benar
                 const pathParts = path.split('/');
-                const fileName = pathParts.pop(); // Menghilangkan 07.json
-                const folderPath = pathParts.join('/'); // assets/n3/2011/07 (jika path aslinya n3/2011/07.json)
-                
+                const fileName = pathParts.pop(); 
+                const folderPath = pathParts.join('/'); 
                 const imageFolder = fileName.replace('.json', ''); 
                 const src = `assets/${folderPath}/${imageFolder}/${q.image}`;
                 
@@ -196,16 +196,17 @@
         });
         updateStatus();
     } catch (e) {
-        console.error(e);
-        area.innerHTML = "<p style='color:red; text-align:center;'>Gagal memuat file soal.</p>";
+        console.error("Error loading exam:", e);
+        area.innerHTML = "<p style='color:red; text-align:center;'>Gagal memuat file soal. Cek folder assets Anda.</p>";
     }
 }
 
-// --- FUNGSI SHOWRESULTS YANG SUDAH DIPERBAIKI ---
+// --- BAGIAN SHOW RESULTS ---
 function showResults() {
     if (currentAnswers.includes(null)) {
         if (!confirm("Masih ada soal yang belum dijawab. Selesai sekarang?")) return;
     }
+    
     isFinished = true;
     let totalBenar = 0;
     const stats = { kanji: {c:0, t:0}, bunpou: {c:0, t:0}, dokkai: {c:0, t:0}, choukai: {c:0, t:0} };
@@ -218,11 +219,15 @@ function showResults() {
         }
         stats[q.categoryGroup].t++;
 
-        // Beri warna pada pilihan jawaban (Hijau jika benar, Merah jika salah)
+        // Visual feedback jawaban benar/salah
         const options = document.querySelectorAll(`[id^="q${i}-o"]`);
         options.forEach((el, oIdx) => {
-            if (oIdx === q.correct) el.classList.add('correct');
-            else if (oIdx === currentAnswers[i]) el.classList.add('wrong');
+            el.classList.remove('selected'); // Bersihkan seleksi biru
+            if (oIdx === q.correct) {
+                el.classList.add('correct'); // Hijau untuk yang benar
+            } else if (oIdx === currentAnswers[i]) {
+                el.classList.add('wrong'); // Merah untuk yang salah pilih
+            }
         });
     });
 
@@ -236,9 +241,13 @@ function showResults() {
     document.getElementById('result-box').style.display = 'block';
     document.getElementById('submit-btn').style.display = 'none';
     document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
+    
     drawChart(pilarScores);
     openDanbo();
-    addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${totalBenar}/${totalSoal}</b>. Bagian mana yang ingin kamu bahas?`);
+    addDanboMessage(`<strong>Danbo:</strong> Ujian selesai! Skor kamu <b>${totalBenar}/${totalSoal}</b>. Bagian mana yang ingin kamu pelajari lebih lanjut?`);
+    
+    // Auto-scroll ke atas untuk lihat hasil
+    document.getElementById('exam-content').scrollTo({top: 0, behavior: 'smooth'});
 }
 
         function drawChart(dataPoin) {
