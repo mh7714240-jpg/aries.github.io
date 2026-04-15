@@ -1,0 +1,25 @@
+{
+  "levels": [
+    {
+      "id": "n3",
+      "name": "JLPT N3",
+      "years": [
+        {
+          "year": "2011",
+          "exams": [
+            {
+              "period": "07",
+              "label": "Juli 2011",
+              "path": "n3/2011/07.json"
+            },
+            {
+              "period": "12",
+              "label": "Desember 2011",
+              "path": "n3/2011/12.json"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
