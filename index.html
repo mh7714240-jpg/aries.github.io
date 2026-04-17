@@ -83,7 +83,7 @@
     </div>
 
     <div id="chat-icon" onclick="openDanbo()">
-        <img src="assets/icon robot.jpeg" alt="Danbo">
+        <img id="anya-icon" src="assets/icon robot.jpeg" alt="Anya Belajar">
     </div>
 
     <div id="chat-sidebar">
@@ -103,7 +103,7 @@
         let isFinished = false;
         let chatHistory = [];
         let myRadarChart = null;
-        let imageFolderPath = ""; // Variabel untuk menyimpan jalur folder gambar
+        let imageFolderPath = "";
 
         async function loadLevels() {
             try {
@@ -138,10 +138,7 @@
         }
 
         async function startExam(path, label) {
-            // REVISI LOGIKA PATH:
-            // Jika path = "n3/2011/07.json", maka imageFolderPath menjadi "n3/2011/07/"
             imageFolderPath = path.replace('.json', '/');
-
             document.getElementById('file-screen').classList.add('hidden');
             document.getElementById('exam-screen').style.display = 'flex';
             document.getElementById('chat-icon').style.display = 'flex';
@@ -152,7 +149,6 @@
             try {
                 const res = await fetch(`assets/${path}`);
                 const data = await res.json();
-
                 area.innerHTML = ''; 
                 currentQuestions = [];
                 const categories = Object.keys(data);
@@ -181,12 +177,10 @@
                         });
                     }
                 });
-
                 totalSoal = currentQuestions.length;
                 currentAnswers = new Array(totalSoal).fill(null);
                 isFinished = false;
                 updateStatus();
-
             } catch (e) { 
                 area.innerHTML = `<p style='color:red;'>Gagal memuat: ${e.message}</p>`;
             }
@@ -196,38 +190,19 @@
             const card = document.createElement('div');
             card.className = 'question-card';
             let htmlContent = '';
-
-            // TAMPILKAN GAMBAR (Mencari di dalam folder yang namanya sama dengan file JSON)
             if (q.image) {
-                htmlContent += `
-                    <div class="q-image-container">
-                        <img src="assets/${imageFolderPath}${q.image}" class="q-image" alt="Soal ${i+1}">
-                    </div>
-                `;
+                htmlContent += `<div class="q-image-container"><img src="assets/${imageFolderPath}${q.image}" class="q-image" alt="Soal ${i+1}"></div>`;
             }
-
             if (q.embeddedText && !q.image) {
-                htmlContent += `
-                    <div class="reading-block">
-                        <small style="color:var(--primary)"><b>${q.sectionTitle || 'BACAAN'}</b></small>
-                        <div style="white-space: pre-wrap; margin-top:5px;">${q.embeddedText}</div>
-                    </div>
-                `;
+                htmlContent += `<div class="reading-block"><small style="color:var(--primary)"><b>${q.sectionTitle || 'BACAAN'}</b></small><div style="white-space: pre-wrap; margin-top:5px;">${q.embeddedText}</div></div>`;
             }
-
             let opts = '';
             if(q.options) {
                 q.options.forEach((opt, o) => {
                     opts += `<div class="option-item" id="q${i}-o${o}" onclick="pickOption(${i}, ${o})">${o+1}. ${opt}</div>`;
                 });
             }
-
-            htmlContent += `
-                <small style="color:var(--accent)">[${q.categoryGroup.toUpperCase()} - No. ${i+1}]</small>
-                <p style="font-size: 17px; margin-top: 10px;"><b>${q.q}</b></p>
-                <div class="options-list">${opts}</div>
-            `;
-
+            htmlContent += `<small style="color:var(--accent)">[${q.categoryGroup.toUpperCase()} - No. ${i+1}]</small><p style="font-size: 17px; margin-top: 10px;"><b>${q.q}</b></p><div class="options-list">${opts}</div>`;
             card.innerHTML = htmlContent;
             container.appendChild(card);
         }
@@ -258,17 +233,14 @@
                 let catKey = "Kanji";
                 if(q.categoryGroup.toLowerCase().includes('bunpou')) catKey = "Bunpou";
                 else if(q.categoryGroup.toLowerCase().includes('dokkai')) catKey = "Dokkai";
-                
                 mainStats[catKey].t++;
                 if(isCorrect) mainStats[catKey].c++;
-                
                 document.querySelectorAll(`[id^="q${i}-o"]`).forEach((el, oIdx) => {
                     el.classList.remove('selected');
                     if (oIdx === q.correct) el.classList.add('correct');
                     else if (oIdx === currentAnswers[i]) el.classList.add('wrong');
                 });
             });
-
             document.getElementById('result-box').style.display = 'block';
             document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
@@ -319,14 +291,28 @@
             b.appendChild(p); b.scrollTop = b.scrollHeight; 
         }
 
+        // REVISI: Fungsi buka chat menampilkan Anya tidur dan mengubah aksi klik ikon
         function openDanbo() { 
             document.getElementById('chat-sidebar').classList.add('active'); 
             document.body.classList.add('chat-open'); 
+            
+            const anyaImg = document.getElementById('anya-icon');
+            anyaImg.src = "assets/anya tidur.jpg"; 
+            anyaImg.alt = "Anya Tidur";
+            
+            document.getElementById('chat-icon').onclick = closeDanbo;
         }
 
+        // REVISI: Fungsi tutup chat mengembalikan Anya belajar
         function closeDanbo() { 
             document.getElementById('chat-sidebar').classList.remove('active'); 
             document.body.classList.remove('chat-open'); 
+            
+            const anyaImg = document.getElementById('anya-icon');
+            anyaImg.src = "assets/icon robot.jpeg"; 
+            anyaImg.alt = "Anya Belajar";
+            
+            document.getElementById('chat-icon').onclick = openDanbo;
         }
 
         function showFolders() { 
