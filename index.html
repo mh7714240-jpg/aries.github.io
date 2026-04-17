@@ -103,7 +103,7 @@
         let isFinished = false;
         let chatHistory = [];
         let myRadarChart = null;
-        let currentFolderPath = ""; // Variabel global untuk menyimpan lokasi folder soal aktif
+        let imageFolderPath = ""; // Variabel untuk menyimpan jalur folder gambar
 
         async function loadLevels() {
             try {
@@ -138,8 +138,9 @@
         }
 
         async function startExam(path, label) {
-            // REVISI: Simpan folder path agar gambar bisa diload sesuai folder n3/2011/07/
-            currentFolderPath = path.substring(0, path.lastIndexOf('/') + 1);
+            // REVISI LOGIKA PATH:
+            // Jika path = "n3/2011/07.json", maka imageFolderPath menjadi "n3/2011/07/"
+            imageFolderPath = path.replace('.json', '/');
 
             document.getElementById('file-screen').classList.add('hidden');
             document.getElementById('exam-screen').style.display = 'flex';
@@ -159,7 +160,6 @@
                 categories.forEach(cat => {
                     if (Array.isArray(data[cat])) {
                         data[cat].forEach((item) => {
-                            // REVISI: Logika untuk Nested Questions (Blok Dokkai dengan Text/Image bersama)
                             if (item.questions && Array.isArray(item.questions)) {
                                 item.questions.forEach((subQ) => {
                                     const qIndex = currentQuestions.length;
@@ -168,12 +168,11 @@
                                         categoryGroup: cat, 
                                         embeddedText: item.text || null,
                                         sectionTitle: item.section_title || null,
-                                        image: item.image || subQ.image || null // Gambar bisa di level grup (38-39) atau per soal
+                                        image: item.image || subQ.image || null 
                                     });
                                     renderSingleQuestion(currentQuestions[qIndex], qIndex, area);
                                 });
                             } 
-                            // Logika untuk soal mandiri (tanpa grup)
                             else if (item.q) {
                                 const qIndex = currentQuestions.length;
                                 currentQuestions.push({ ...item, categoryGroup: cat });
@@ -198,16 +197,15 @@
             card.className = 'question-card';
             let htmlContent = '';
 
-            // REVISI: Prioritas Tampilkan Gambar (Path otomatis menyesuaikan folder JSON)
+            // TAMPILKAN GAMBAR (Mencari di dalam folder yang namanya sama dengan file JSON)
             if (q.image) {
                 htmlContent += `
                     <div class="q-image-container">
-                        <img src="assets/${currentFolderPath}${q.image}" class="q-image" alt="Soal ${i+1}">
+                        <img src="assets/${imageFolderPath}${q.image}" class="q-image" alt="Soal ${i+1}">
                     </div>
                 `;
             }
 
-            // Tampilkan teks bacaan jika ada (Hanya jika tidak ada gambar atau sebagai pelengkap)
             if (q.embeddedText && !q.image) {
                 htmlContent += `
                     <div class="reading-block">
