@@ -45,9 +45,19 @@
         .chat-header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         
         /* REVISI CSS: Gaya untuk ikon Kelinci Tidur sebagai tombol tutup */
-        #rabbit-close-icon { width: 30px; height: auto; cursor: pointer; transition: transform 0.2s; }
-        #rabbit-close-icon:hover { transform: scale(1.1); }
+#rabbit-close-icon {
+    width: 45px; /* PERBESAR: Dari 30px menjadi 45px */
+    height: auto; /* Mempertahankan proporsi agar tidak gepeng */
+    cursor: pointer;
+    transition: all 0.2s ease-in-out; /* Efek transisi yang lebih halus */
+    padding: 5px; /* Memberi ruang klik yang lebih nyaman */
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); /* Opsional: Beri bayangan tipis agar menonjol */
+}
 
+/* Efek saat kursor di atasnya (Hover) */
+#rabbit-close-icon:hover {
+    transform: scale(1.15) rotate(-5deg); /* Sedikit membesar dan miring lucu saat didekati */
+}
         #danbo-msg { padding: 12px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 13px; line-height: 1.5; }
         .chat-input-area { display: flex; padding: 8px; background: white; border-top: 1px solid #ddd; }
         #user-input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 13px; }
