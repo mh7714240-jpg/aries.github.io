@@ -321,52 +321,58 @@
             });
         }
 
-        // REVISI: sendMessage mengirimkan konteks ujian & skor
         async function sendMessage(overrideMsg = null, isAuto = false) {
-            const input = document.getElementById('user-input');
-            const msg = overrideMsg || input.value.trim(); 
-            
-            if(!msg) return;
-            if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
-            if(input) input.value = '';
+    const input = document.getElementById('user-input');
+    const msg = overrideMsg || input.value.trim(); 
+    
+    if(!msg) return;
+    if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
+    if(input) input.value = '';
 
-            // Ambil konteks soal yang terlihat
-            const visibleQuestionsContext = currentQuestions
-                .filter(q => {
-                    const card = document.getElementById(`question-card-${q.originalIndex}`);
-                    return card && card.style.display !== 'none';
-                })
-                .map(q => ({
-                    pertanyaan: q.q,
-                    pilihan: q.options,
-                    kategori: q.categoryGroup
-                }));
+    // 1. Cari soal yang sedang aktif/terlihat oleh user (filter berdasarkan search)
+    // Jika user sedang bertanya tentang soal tertentu, AI butuh konteksnya.
+    const visibleQuestion = currentQuestions.find(q => {
+        const card = document.getElementById(`question-card-${q.originalIndex}`);
+        return card && card.style.display !== 'none';
+    });
 
-            const scoreData = {
-                totalBenar: totalBenar,
-                totalSoal: totalSoal,
-                persentase: totalSoal > 0 ? (totalBenar / totalSoal) * 100 : 0
-            };
+    // 2. Siapkan object currentQuestionContext sesuai harapan Backend
+    let questionContext = null;
+    if (visibleQuestion) {
+        questionContext = {
+            pertanyaan: visibleQuestion.q,
+            pilihan: visibleQuestion.options,
+            kategori: visibleQuestion.categoryGroup,
+            nomor: visibleQuestion.originalIndex + 1,
+            kunci_jawaban: visibleQuestion.correct // Mengirim indeks jawaban benar agar AI tahu
+        };
+    }
 
-            try {
-                const res = await fetch(BACKEND_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        userQuery: msg, 
-                        status: isFinished ? "POST" : "DURING", 
-                        history: chatHistory,
-                        examContext: visibleQuestionsContext,
-                        score: scoreData
-                    })
-                });
-                const data = await res.json();
-                addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
-                chatHistory.push({ role: "user", content: msg }, { role: "assistant", content: data.reply });
-            } catch (e) { 
-                addDanboMessage("<strong>Danbo:</strong> Gagal terhubung."); 
-            }
-        }
+    try {
+        const res = await fetch(BACKEND_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                userQuery: msg, 
+                // Mengubah 'DURING' menjadi 'DURING_EXAM' agar sesuai dengan logic if di Backend
+                status: isFinished ? "POST" : "DURING_EXAM", 
+                history: chatHistory,
+                currentQuestionContext: questionContext // Nama key disamakan dengan Backend
+            })
+        });
+
+        const data = await res.json();
+        addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
+        
+        // Simpan riwayat agar percakapan nyambung
+        chatHistory.push({ role: "user", content: msg });
+        chatHistory.push({ role: "assistant", content: data.reply });
+
+    } catch (e) { 
+        console.error("Chat Error:", e);
+        addDanboMessage("<strong>Danbo:</strong> Gagal terhubung ke server."); 
+    }
+}
 
         function addDanboMessage(t) { 
             const b = document.getElementById('danbo-msg'); 
