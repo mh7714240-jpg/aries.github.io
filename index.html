@@ -331,35 +331,29 @@
 
     // 1. Cari soal yang sedang aktif/terlihat oleh user (filter berdasarkan search)
     // Jika user sedang bertanya tentang soal tertentu, AI butuh konteksnya.
-    const visibleQuestion = currentQuestions.find(q => {
+    const visibleQuestionsContext = currentQuestions
+    .filter(q => {
         const card = document.getElementById(`question-card-${q.originalIndex}`);
         return card && card.style.display !== 'none';
-    });
+    })
+    .map(q => ({
+        nomor: q.originalIndex + 1,
+        pertanyaan: (q.embeddedText || "") + " " + q.q, // Gabungkan teks bacaan & pertanyaan
+        pilihan: q.options,
+        kategori: q.categoryGroup,
+        kunci_jawaban: q.correct
+    }));
 
-    // 2. Siapkan object currentQuestionContext sesuai harapan Backend
-    let questionContext = null;
-    if (visibleQuestion) {
-        questionContext = {
-            pertanyaan: visibleQuestion.q,
-            pilihan: visibleQuestion.options,
-            kategori: visibleQuestion.categoryGroup,
-            nomor: visibleQuestion.originalIndex + 1,
-            kunci_jawaban: visibleQuestion.correct // Mengirim indeks jawaban benar agar AI tahu
-        };
-    }
-
-    try {
-        const res = await fetch(BACKEND_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                userQuery: msg, 
-                // Mengubah 'DURING' menjadi 'DURING_EXAM' agar sesuai dengan logic if di Backend
-                status: isFinished ? "POST" : "DURING_EXAM", 
-                history: chatHistory,
-                currentQuestionContext: questionContext // Nama key disamakan dengan Backend
-            })
-        });
+// Kirim ke backend
+const res = await fetch(BACKEND_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+        userQuery: msg, 
+        status: isFinished ? "POST" : "DURING_EXAM", 
+        history: chatHistory,
+        currentQuestionContext: visibleQuestionsContext // Sekarang berisi DAFTAR soal
+    })
 
         const data = await res.json();
         addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
