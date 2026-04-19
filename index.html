@@ -36,34 +36,28 @@
         #result-box { display: none; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); max-width: 800px; }
         .chart-container { max-width: 450px; margin: 20px auto; }
 
-        #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.2); cursor: pointer; display: none; z-index: 1000; border: 2px solid var(--accent); overflow: hidden; }
-        #chat-icon img { width: 100%; height: 100%; object-fit: cover; }
+        /* REVISI: Ikon Chopper Transparan */
+        #chat-icon { 
+            position: fixed; bottom: 20px; right: 20px; width: 90px; height: auto; 
+            background: transparent !important; cursor: pointer; display: none; z-index: 1000; 
+            transition: transform 0.2s;
+        }
+        #chat-icon:hover { transform: scale(1.1); }
+        #chat-icon img { width: 100%; height: auto; display: block; }
         
         #chat-sidebar { position: fixed; bottom: -35vh; left: 0; width: 100%; height: 33vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: bottom 0.4s ease; z-index: 1001; }
         #chat-sidebar.active { bottom: 0; }
         
         .chat-header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
         
-        /* REVISI CSS: Gaya untuk ikon Kelinci Tidur sebagai tombol tutup */
-#rabbit-close-icon {
-    width: 50px; /* PERBESAR: Dari 30px menjadi 45px */
-    height: auto; /* Mempertahankan proporsi agar tidak gepeng */
-    cursor: pointer;
-    transition: all 0.2s ease-in-out; /* Efek transisi yang lebih halus */
-    padding: 5px; /* Memberi ruang klik yang lebih nyaman */
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); /* Opsional: Beri bayangan tipis agar menonjol */
-}
+        #rabbit-close-icon { width: 45px; height: auto; cursor: pointer; transition: all 0.2s; padding: 5px; }
+        #rabbit-close-icon:hover { transform: scale(1.15) rotate(-5deg); }
 
-/* Efek saat kursor di atasnya (Hover) */
-#rabbit-close-icon:hover {
-    transform: scale(1.15) rotate(-5deg); /* Sedikit membesar dan miring lucu saat didekati */
-}
         #danbo-msg { padding: 12px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 13px; line-height: 1.5; }
         .chat-input-area { display: flex; padding: 8px; background: white; border-top: 1px solid #ddd; }
         #user-input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; font-size: 13px; }
         #send-btn { background: var(--accent); color: white; border: none; padding: 0 15px; margin-left: 8px; border-radius: 15px; cursor: pointer; }
         
-        /* REVISI CSS: Gaya untuk kotak pencarian */
         .search-container { background: white; padding: 10px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: center; }
         #search-input { width: 100%; max-width: 400px; padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; outline: none; }
 
@@ -128,6 +122,7 @@
         let currentQuestions = [];
         let currentAnswers = [];
         let totalSoal = 0;
+        let totalBenar = 0;
         let isFinished = false;
         let chatHistory = [];
         let myRadarChart = null;
@@ -169,7 +164,7 @@
             imageFolderPath = path.replace('.json', '/');
             document.getElementById('file-screen').classList.add('hidden');
             document.getElementById('exam-screen').style.display = 'flex';
-            document.getElementById('chat-icon').style.display = 'flex';
+            document.getElementById('chat-icon').style.display = 'block';
             document.getElementById('exam-title-display').innerText = label;
             const area = document.getElementById('questions-area');
             area.innerHTML = 'Memuat data soal...';
@@ -193,7 +188,7 @@
                                         embeddedText: item.text || null,
                                         sectionTitle: item.section_title || null,
                                         image: item.image || subQ.image || null,
-                                        originalIndex: qIndex // Menyimpan index asli untuk sinkronisasi jawaban
+                                        originalIndex: qIndex
                                     });
                                     renderSingleQuestion(currentQuestions[qIndex], qIndex, area);
                                 });
@@ -218,7 +213,6 @@
         function renderSingleQuestion(q, i, container) {
             const card = document.createElement('div');
             card.className = 'question-card';
-            // Menambahkan ID unik berdasarkan originalIndex agar bisa direferensikan saat pencarian
             card.id = `question-card-${q.originalIndex}`; 
             
             let htmlContent = '';
@@ -231,7 +225,6 @@
             let opts = '';
             if(q.options) {
                 q.options.forEach((opt, o) => {
-                    // pickOption menggunakan q.originalIndex
                     opts += `<div class="option-item" id="q${q.originalIndex}-o${o}" onclick="pickOption(${q.originalIndex}, ${o})">${o+1}. ${opt}</div>`;
                 });
             }
@@ -243,9 +236,7 @@
         function pickOption(originalQIdx, oIdx) {
             if (isFinished) return;
             currentAnswers[originalQIdx] = oIdx;
-            // Membersihkan seleksi hanya pada soal ini
             document.querySelectorAll(`[id^="q${originalQIdx}-o"]`).forEach(el => el.classList.remove('selected'));
-            // Menambahkan kelas selected
             document.getElementById(`q${originalQIdx}-o${oIdx}`).classList.add('selected');
             updateStatus();
         }
@@ -259,13 +250,12 @@
         function showResults() {
             if (currentAnswers.includes(null) && !confirm("Ada soal belum dijawab. Yakin?")) return;
             
-            // REVISI LOGIKA: Pastikan semua soal ditampilkan kembali sebelum cek skor
             const searchInput = document.getElementById('search-input');
             if (searchInput) searchInput.value = ''; 
-            searchQuestions(); // Reset filter
+            searchQuestions(); 
 
             isFinished = true;
-            let totalBenar = 0;
+            totalBenar = 0;
             const mainStats = { "Kanji": {c:0, t:0}, "Bunpou": {c:0, t:0}, "Dokkai": {c:0, t:0} };
 
             currentQuestions.forEach((q, i) => {
@@ -276,17 +266,23 @@
                 else if(q.categoryGroup.toLowerCase().includes('dokkai')) catKey = "Dokkai";
                 mainStats[catKey].t++;
                 if(isCorrect) mainStats[catKey].c++;
+                
                 document.querySelectorAll(`[id^="q${i}-o"]`).forEach((el, oIdx) => {
                     el.classList.remove('selected');
                     if (oIdx === q.correct) el.classList.add('correct');
                     else if (oIdx === currentAnswers[i]) el.classList.add('wrong');
                 });
             });
+
             document.getElementById('result-box').style.display = 'block';
             document.getElementById('submit-btn').style.display = 'none';
             document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
+            
             drawChart(Object.keys(mainStats), Object.keys(mainStats).map(l => mainStats[l].t ? Math.round((mainStats[l].c / mainStats[l].t) * 100) : 0));
+            
             openDanbo();
+            // Kirim ringkasan otomatis hasil ujian
+            sendMessage("Sistem: Ujian Selesai", true);
         }
 
         function drawChart(labels, dataPoin) {
@@ -308,45 +304,68 @@
             });
         }
 
-        // REVISI JAVASCRIPT: Fungsi Logika Pencarian Kosakata/Soal lokal
         function searchQuestions() {
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const area = document.getElementById('questions-area');
-            
-            // Logika: Sembunyikan/Tampilkan kartu soal yang sudah ada di DOM
             currentQuestions.forEach((q) => {
                 const card = document.getElementById(`question-card-${q.originalIndex}`);
                 if (!card) return;
-
                 const questionText = q.q ? q.q.toLowerCase() : "";
                 const embeddedText = q.embeddedText ? q.embeddedText.toLowerCase() : "";
                 const category = q.categoryGroup ? q.categoryGroup.toLowerCase() : "";
                 
-                // Cek apakah kata kunci ada di soal, bacaan, atau kategori
                 if (questionText.includes(searchTerm) || embeddedText.includes(searchTerm) || category.includes(searchTerm)) {
-                    card.style.display = 'block'; // Tampilkan
+                    card.style.display = 'block';
                 } else {
-                    card.style.display = 'none'; // Sembunyikan
+                    card.style.display = 'none';
                 }
             });
         }
 
-        async function sendMessage() {
+        // REVISI: sendMessage mengirimkan konteks ujian & skor
+        async function sendMessage(overrideMsg = null, isAuto = false) {
             const input = document.getElementById('user-input');
-            const msg = input.value.trim(); 
+            const msg = overrideMsg || input.value.trim(); 
+            
             if(!msg) return;
-            addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
-            input.value = '';
+            if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
+            if(input) input.value = '';
+
+            // Ambil konteks soal yang terlihat
+            const visibleQuestionsContext = currentQuestions
+                .filter(q => {
+                    const card = document.getElementById(`question-card-${q.originalIndex}`);
+                    return card && card.style.display !== 'none';
+                })
+                .map(q => ({
+                    pertanyaan: q.q,
+                    pilihan: q.options,
+                    kategori: q.categoryGroup
+                }));
+
+            const scoreData = {
+                totalBenar: totalBenar,
+                totalSoal: totalSoal,
+                persentase: totalSoal > 0 ? (totalBenar / totalSoal) * 100 : 0
+            };
+
             try {
                 const res = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userQuery: msg, status: isFinished ? "POST" : "DURING", history: chatHistory })
+                    body: JSON.stringify({ 
+                        userQuery: msg, 
+                        status: isFinished ? "POST" : "DURING", 
+                        history: chatHistory,
+                        examContext: visibleQuestionsContext,
+                        score: scoreData
+                    })
                 });
                 const data = await res.json();
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
                 chatHistory.push({ role: "user", content: msg }, { role: "assistant", content: data.reply });
-            } catch (e) { addDanboMessage("<strong>Danbo:</strong> Gagal terhubung."); }
+            } catch (e) { 
+                addDanboMessage("<strong>Danbo:</strong> Gagal terhubung."); 
+            }
         }
 
         function addDanboMessage(t) { 
