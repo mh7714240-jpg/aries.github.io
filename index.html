@@ -243,77 +243,63 @@
 
     // 4. Send Message - REVISI UTAMA (Deteksi Nomor & Konteks)
     async function sendMessage(overrideMsg = null, isAuto = false) {
-        const input = document.getElementById('user-input');
-        const msg = overrideMsg || (input ? input.value.trim() : ""); 
-        
-        if(!msg) return;
-        if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
-        if(input) input.value = '';
+    const input = document.getElementById('user-input');
+    const msg = overrideMsg || (input ? input.value.trim() : ""); 
+    
+    if(!msg) return;
+    if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
+    if(input) input.value = '';
 
-        // Deteksi angka dalam pesan user
-        const foundNumbers = msg.match(/\d+/g); 
-        let selectedContext = [];
+    // 1. Cari angka soal
+    const foundNumbers = msg.match(/\d+/g); 
+    let selectedContext = [];
 
-        if (foundNumbers) {
-            foundNumbers.forEach(num => {
-                const actualIndex = parseInt(num) - 1;
-                // Pastikan indeks valid sebelum mengambil data
-                if (currentQuestions[actualIndex]) {
-                    selectedContext.push({
-                        nomor: num,
-                        pertanyaan: (currentQuestions[actualIndex].embeddedText || "") + " " + (currentQuestions[actualIndex].q || ""),
-                        pilihan: currentQuestions[actualIndex].options || [],
-                        kategori: currentQuestions[actualIndex].categoryGroup,
-                        kunci_jawaban: currentQuestions[actualIndex].correct
-                    });
-                }
-            });
-        }
-
-        // Jika tidak sebut nomor, ambil 5 soal pertama sebagai gambaran materi
-        if (selectedContext.length === 0 && currentQuestions.length > 0) {
-            selectedContext = currentQuestions.slice(0, 5).map(q => ({
-                nomor: q.originalIndex + 1,
-                pertanyaan: (q.embeddedText || "") + " " + (q.q || ""),
-                pilihan: q.options || [],
-                kategori: q.categoryGroup,
-                kunci_jawaban: q.correct
-            }));
-        }
-
-        // Tampilkan indikator loading sederhana
-        const loadingId = "load-" + Date.now();
-        addDanboMessage(`<span id="${loadingId}"><em>Danbo sedang berpikir...</em></span>`);
-
-        try {
-            const res = await fetch(BACKEND_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    userQuery: msg, 
-                    status: isFinished ? "POST_EXAM" : "DURING_EXAM", 
-                    history: chatHistory,
-                    currentQuestionContext: selectedContext 
-                })
-            });
-
-            const data = await res.json();
-            
-            // Hapus loading dan tampilkan jawaban
-            const loader = document.getElementById(loadingId);
-            if(loader) loader.parentElement.remove();
-
-            addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
-            
-            chatHistory.push({ role: "user", content: msg });
-            chatHistory.push({ role: "assistant", content: data.reply });
-
-        } catch (e) { 
-            console.error("Chat Error:", e);
-            const loader = document.getElementById(loadingId);
-            if(loader) loader.innerHTML = "Gagal terhubung ke Danbo. Coba cek koneksi internetmu.";
-        }
+    if (foundNumbers) {
+        foundNumbers.forEach(num => {
+            const actualIndex = parseInt(num) - 1;
+            if (currentQuestions && currentQuestions[actualIndex]) {
+                selectedContext.push({
+                    nomor: num,
+                    pertanyaan: (currentQuestions[actualIndex].embeddedText || "") + " " + (currentQuestions[actualIndex].q || ""),
+                    pilihan: currentQuestions[actualIndex].options || [],
+                    kategori: currentQuestions[actualIndex].categoryGroup,
+                    kunci_jawaban: currentQuestions[actualIndex].correct
+                });
+            }
+        });
     }
+
+    // Tampilkan loading
+    const loadingId = "load-" + Date.now();
+    addDanboMessage(`<span id="${loadingId}"><em>Danbo sedang mengetik...</em></span>`);
+
+    try {
+        const res = await fetch(BACKEND_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                userQuery: msg, 
+                // Jika selectedContext kosong, kirim null agar backend tahu ini chat biasa
+                currentQuestionContext: selectedContext.length > 0 ? selectedContext : null,
+                status: isFinished ? "POST_EXAM" : "DURING_EXAM",
+                history: chatHistory
+            })
+        });
+
+        const data = await res.json();
+        const loader = document.getElementById(loadingId);
+        if(loader) loader.parentElement.remove();
+
+        addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
+        
+        chatHistory.push({ role: "user", content: msg });
+        chatHistory.push({ role: "assistant", content: data.reply });
+
+    } catch (e) { 
+        const loader = document.getElementById(loadingId);
+        if(loader) loader.innerHTML = "Gagal konek ke server.";
+    }
+}
 
     // 5. Fungsi Utility & UI
     function addDanboMessage(t) { 
