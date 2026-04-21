@@ -36,6 +36,27 @@
         #result-box { display: none; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); max-width: 800px; }
         .chart-container { max-width: 450px; margin: 20px auto; }
 
+        .chat-icon-container {
+    width: 50px; /* Atur ukuran container sesuai kebutuhan */
+    height: 50px;
+    border-radius: 50%; /* Membuat container menjadi bulat sempurna */
+    overflow: hidden; /* Memotong gambar yang keluar dari lingkaran */
+    border: 2px solid #ccc; /* Opsional: Tambahkan border tipis */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 10px auto; /* Mengatur posisi di sidebar */
+    cursor: pointer;
+}
+
+/* Mengatur gambar ikon di dalamnya */
+.chat-icon-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Memastikan gambar memenuhi area tanpa gepeng */
+    object-position: center; /* Memfokuskan potongan gambar di tengah (wajah) */
+}
+        
         #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 90px; height: auto; background: transparent !important; cursor: pointer; display: none; z-index: 1000; transition: transform 0.2s; }
         #chat-icon:hover { transform: scale(1.1); }
         #chat-icon img { width: 100%; height: auto; display: block; border-radius: 10px; }
@@ -93,9 +114,11 @@
         </div>
     </div>
 
-    <div id="chat-icon" onclick="openDanbo()">
-        <img src="assets/icon robot.jpeg" alt="Danbo">
-    </div>
+    <div class="sidebar">
+    <div class="chat-icon-container" onclick="openDanbo()">
+        <img src="assets/icon_chat.jpg" alt="Danbo Icon">
+</div>
+    
 
     <div id="chat-sidebar">
         <div class="chat-header">
