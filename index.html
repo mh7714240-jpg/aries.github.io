@@ -105,240 +105,282 @@
     </div>
 
     <script>
-        const BACKEND_URL = "https://web-backend-l5p7.onrender.com/danbo-chat"; 
-        let currentQuestions = [];
-        let currentAnswers = [];
-        let totalSoal = 0;
-        let isFinished = false;
-        let chatHistory = [];
-        let myRadarChart = null;
-        let lastActiveIndex = null;
+    const BACKEND_URL = "https://web-backend-l5p7.onrender.com/danbo-chat"; 
+    let currentQuestions = [];
+    let currentAnswers = [];
+    let totalSoal = 0;
+    let totalBenar = 0;
+    let isFinished = false;
+    let chatHistory = [];
+    let myRadarChart = null;
+    let imageFolderPath = "";
+    let lastActiveIndex = null;
 
-        // 1. Load Materi (Folder)
-        async function loadLevels() {
-            const container = document.getElementById('level-container');
-            try {
-                const res = await fetch('assets/manifest.json');
-                const data = await res.json();
-                container.innerHTML = '';
-                data.levels.forEach(lvl => {
-                    const card = document.createElement('div');
-                    card.className = 'folder-card';
-                    card.innerHTML = `📁<br><b>${lvl.name}</b>`;
-                    card.onclick = () => openLevelFiles(lvl);
-                    container.appendChild(card);
-                });
-            } catch (e) { container.innerHTML = "Gagal memuat manifest."; }
-        }
-
-        // 2. Tampilkan File Berdasarkan Tahun
-        function openLevelFiles(levelData) {
-            document.getElementById('folder-screen').classList.add('hidden');
-            document.getElementById('file-screen').classList.remove('hidden');
-            const container = document.getElementById('file-container');
+    // --- FUNGSI LOAD & EXAM TETAP SAMA (DIPERTAHANKAN) ---
+    async function loadLevels() {
+        try {
+            const res = await fetch('assets/manifest.json');
+            const data = await res.json();
+            const container = document.querySelector('.folder-grid');
             container.innerHTML = '';
-            
-            levelData.years.forEach(y => {
-                const yearDiv = document.createElement('div');
-                yearDiv.className = 'year-divider';
-                yearDiv.innerText = `Tahun ${y.year}`;
-                container.appendChild(yearDiv);
-
-                y.exams.forEach(ex => {
-                    const item = document.createElement('div');
-                    item.className = 'file-item';
-                    item.innerText = `📄 ${ex.label}`;
-                    item.onclick = () => startExam(ex.path, ex.label);
-                    container.appendChild(item);
-                });
+            data.levels.forEach(lvl => {
+                const card = document.createElement('div');
+                card.className = 'folder-card';
+                card.innerHTML = `📁<br>${lvl.name}`;
+                card.onclick = () => openLevelFiles(lvl);
+                container.appendChild(card);
             });
-        }
+        } catch (e) { console.error("Manifest Error:", e); }
+    }
 
-        // 3. Mulai Ujian & Render Soal
-        async function startExam(path, label) {
-            document.getElementById('file-screen').classList.add('hidden');
-            document.getElementById('exam-screen').style.display = 'flex';
-            document.getElementById('chat-icon').style.display = 'block';
-            document.getElementById('exam-title-display').innerText = label;
+    function showFolders() {
+        document.getElementById('file-screen').classList.add('hidden');
+        document.getElementById('folder-screen').classList.remove('hidden');
+    }
+
+    function openLevelFiles(levelData) {
+        document.getElementById('folder-screen').classList.add('hidden');
+        document.getElementById('file-screen').classList.remove('hidden');
+        const container = document.getElementById('file-container');
+        container.innerHTML = '';
+        levelData.years.forEach(y => {
+            y.exams.forEach(ex => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerText = `📄 ${levelData.name} - ${ex.label}`;
+                item.onclick = () => startExam(ex.path, ex.label);
+                container.appendChild(item);
+            });
+        });
+    }
+
+    async function startExam(path, label) {
+        imageFolderPath = path.replace('.json', '/');
+        document.getElementById('file-screen').classList.add('hidden');
+        document.getElementById('exam-screen').style.display = 'flex';
+        document.getElementById('chat-icon').style.display = 'block';
+        document.getElementById('exam-title-display').innerText = label;
+        const area = document.getElementById('questions-area');
+        area.innerHTML = 'Memuat data soal...';
+
+        try {
+            const res = await fetch(`assets/${path}`);
+            const data = await res.json();
+            area.innerHTML = ''; 
+            currentQuestions = [];
             
-            const area = document.getElementById('questions-area');
-            area.innerHTML = 'Memuat soal...';
-
-            try {
-                const res = await fetch(`assets/${path}`);
-                const data = await res.json();
-                area.innerHTML = ''; 
-                currentQuestions = [];
-                
-                Object.keys(data).forEach(cat => {
-                    if (Array.isArray(data[cat])) {
-                        data[cat].forEach((item) => {
-                            if (item.questions) {
-                                item.questions.forEach((subQ) => {
-                                    const idx = currentQuestions.length;
-                                    currentQuestions.push({ ...subQ, categoryGroup: cat, embeddedText: item.text, originalIndex: idx });
-                                    renderSingleQuestion(currentQuestions[idx], idx, area);
+            Object.keys(data).forEach(cat => {
+                if (Array.isArray(data[cat])) {
+                    data[cat].forEach((item) => {
+                        if (item.questions && Array.isArray(item.questions)) {
+                            item.questions.forEach((subQ) => {
+                                const qIndex = currentQuestions.length;
+                                currentQuestions.push({ 
+                                    ...subQ, 
+                                    categoryGroup: cat, 
+                                    embeddedText: item.text || null,
+                                    sectionTitle: item.section_title || null,
+                                    image: item.image || subQ.image || null,
+                                    originalIndex: qIndex
                                 });
-                            } else if (item.q) {
-                                const idx = currentQuestions.length;
-                                currentQuestions.push({ ...item, categoryGroup: cat, originalIndex: idx });
-                                renderSingleQuestion(currentQuestions[idx], idx, area);
-                            }
-                        });
-                    }
-                });
-                totalSoal = currentQuestions.length;
-                currentAnswers = new Array(totalSoal).fill(null);
-                updateStatus();
-            } catch (e) { area.innerHTML = "Gagal memuat file JSON."; }
-        }
-
-        function renderSingleQuestion(q, i, container) {
-            const card = document.createElement('div');
-            card.className = 'question-card';
-            card.id = `question-card-${q.originalIndex}`;
-            
-            let html = `<small style="color:var(--accent)">[${q.categoryGroup.toUpperCase()} - No ${i+1}]</small>`;
-            if(q.embeddedText) html += `<div class="reading-block">${q.embeddedText}</div>`;
-            html += `<p style="font-size:17px;"><b>${q.q}</b></p>`;
-            html += `<div class="options-list">`;
-            q.options.forEach((opt, oIdx) => {
-                html += `<div class="option-item" id="q${q.originalIndex}-o${oIdx}" onclick="pickOption(${q.originalIndex}, ${oIdx})">${oIdx+1}. ${opt}</div>`;
+                                renderSingleQuestion(currentQuestions[qIndex], qIndex, area);
+                            });
+                        } else if (item.q) {
+                            const qIndex = currentQuestions.length;
+                            currentQuestions.push({ ...item, categoryGroup: cat, originalIndex: qIndex });
+                            renderSingleQuestion(currentQuestions[qIndex], qIndex, area);
+                        }
+                    });
+                }
             });
-            html += `</div>`;
-            card.innerHTML = html;
-            container.appendChild(card);
-        }
-
-        function pickOption(qIdx, oIdx) {
-            if (isFinished) return;
-            lastActiveIndex = qIdx;
-            currentAnswers[qIdx] = oIdx;
-            document.querySelectorAll(`[id^="q${qIdx}-o"]`).forEach(el => el.classList.remove('selected'));
-            document.getElementById(`q${qIdx}-o${oIdx}`).classList.add('selected');
+            totalSoal = currentQuestions.length;
+            currentAnswers = new Array(totalSoal).fill(null);
+            isFinished = false;
             updateStatus();
+        } catch (e) { 
+            area.innerHTML = `<p style='color:red;'>Gagal memuat: ${e.message}</p>`;
+        }
+    }
+
+    function renderSingleQuestion(q, i, container) {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.id = `question-card-${q.originalIndex}`; 
+        
+        let htmlContent = '';
+        if (q.image) {
+            htmlContent += `<div class="q-image-container"><img src="assets/${imageFolderPath}${q.image}" class="q-image" alt="Soal ${i+1}"></div>`;
+        }
+        if (q.embeddedText && !q.image) {
+            htmlContent += `<div class="reading-block"><small style="color:var(--primary)"><b>${q.sectionTitle || 'BACAAN'}</b></small><div style="white-space: pre-wrap; margin-top:5px;">${q.embeddedText}</div></div>`;
+        }
+        let opts = '';
+        if(q.options) {
+            q.options.forEach((opt, o) => {
+                opts += `<div class="option-item" id="q${q.originalIndex}-o${o}" onclick="pickOption(${q.originalIndex}, ${o})">${o+1}. ${opt}</div>`;
+            });
+        }
+        htmlContent += `<small style="color:var(--accent)">[${q.categoryGroup.toUpperCase()} - No. ${i+1}]</small><p style="font-size: 17px; margin-top: 10px;"><b>${q.q}</b></p><div class="options-list">${opts}</div>`;
+        card.innerHTML = htmlContent;
+        container.appendChild(card);
+    }
+
+    function pickOption(originalQIdx, oIdx) {
+        if (isFinished) return;
+        lastActiveIndex = originalQIdx;
+        currentAnswers[originalQIdx] = oIdx;
+        document.querySelectorAll(`[id^="q${originalQIdx}-o"]`).forEach(el => el.classList.remove('selected'));
+        document.getElementById(`q${originalQIdx}-o${oIdx}`).classList.add('selected');
+        updateStatus();
+    }
+
+    function updateStatus() {
+        const answered = currentAnswers.filter(a => a !== null).length;
+        const progressEl = document.getElementById('progress-indicator');
+        if(progressEl) progressEl.innerText = `Progres: ${answered} / ${totalSoal}`;
+    }
+
+    // --- REVISI UTAMA PADA FUNGSI SENDMESSAGE (SINKRON DENGAN BACKEND) ---
+    async function sendMessage(overrideMsg = null, isAuto = false) {
+        const input = document.getElementById('user-input');
+        const msg = overrideMsg || (input ? input.value.trim() : ""); 
+        
+        if(!msg) return;
+        if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
+        if(input) input.value = '';
+
+        const loadingId = "load-" + Date.now();
+        addDanboMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
+
+        let selectedContext = [];
+        let targetIdx = lastActiveIndex;
+
+        // Cek jika user menyebut nomor soal tertentu dalam chat
+        const foundNumbers = msg.match(/\d+/g);
+        if(foundNumbers) {
+            // Gunakan nomor pertama yang ditemukan sebagai target soal
+            targetIdx = parseInt(foundNumbers[0]) - 1;
         }
 
-        function updateStatus() {
-            const answered = currentAnswers.filter(a => a !== null).length;
-            document.getElementById('progress-indicator').innerText = `Progres: ${answered} / ${totalSoal}`;
-        }
-
-        function searchQuestions() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            currentQuestions.forEach(q => {
-                const card = document.getElementById(`question-card-${q.originalIndex}`);
-                const match = (q.q + (q.embeddedText || "")).toLowerCase().includes(term);
-                card.style.display = match ? 'block' : 'none';
+        // Siapkan data konteks soal sesuai format yang diminta Backend
+        if(targetIdx !== null && currentQuestions[targetIdx]) {
+            const q = currentQuestions[targetIdx];
+            selectedContext.push({
+                nomor: targetIdx + 1,
+                pertanyaan: q.q,
+                pilihan: q.options || [],
+                kunci_jawaban: q.correct, // Backend akan melakukan +1
+                bacaan: q.embeddedText || null
             });
         }
 
-        // --- FITUR UTAMA: CHAT DANBO (REVISI LENGKAP) ---
-        async function sendMessage(overrideMsg = null, isAuto = false) {
-            const input = document.getElementById('user-input');
-            const msg = overrideMsg || input.value.trim();
+        try {
+            const res = await fetch(BACKEND_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    userQuery: msg, 
+                    currentQuestionContext: selectedContext.length > 0 ? selectedContext : null,
+                    // Status sinkron dengan instruksi di Backend (DURING_EXAM vs lainnya)
+                    status: isFinished ? "POST_EXAM" : "DURING_EXAM",
+                    history: chatHistory
+                })
+            });
+            const data = await res.json();
+            document.getElementById(loadingId).remove();
             
-            if(!msg) return;
-            if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`);
-            if(input) input.value = '';
+            addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
+            
+            // Simpan riwayat agar AI ingat pembicaraan sebelumnya
+            chatHistory.push({ role: "user", content: msg });
+            chatHistory.push({ role: "assistant", content: data.reply });
+            
+            // Batasi riwayat agar tidak memberatkan request
+            if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
 
-            const loadingId = "load-" + Date.now();
-            addDanboMessage(`<div id="${loadingId}">...</div>`);
-
-            let ctx = [];
-            let target = lastActiveIndex;
-
-            // Deteksi nomor soal dari input user
-            const numMatch = msg.match(/\d+/);
-            if(numMatch) target = parseInt(numMatch[0]) - 1;
-
-            // Kirim data konteks soal yang relevan ke AI
-            if(target !== null && currentQuestions[target]) {
-                const q = currentQuestions[target];
-                ctx.push({ 
-                    nomor: target + 1, 
-                    pertanyaan: q.q, 
-                    pilihan: q.options,
-                    kunci_jawaban: q.correct,
-                    bacaan: q.embeddedText || "",
-                    kategori: q.categoryGroup
-                });
-            }
-
-            try {
-                const res = await fetch(BACKEND_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        userQuery: msg, 
-                        currentQuestionContext: ctx, 
-                        history: chatHistory,
-                        status: isFinished ? "FINISHED" : "DURING_EXAM"
-                    })
-                });
-                
-                const data = await res.json();
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.remove();
-                
-                addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
-                chatHistory.push({ role: "user", content: msg }, { role: "assistant", content: data.reply });
-                
-                if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
-                
-            } catch (e) { 
-                const loadingEl = document.getElementById(loadingId);
-                if (loadingEl) loadingEl.innerText = "Error koneksi ke Danbo."; 
-            }
+        } catch (e) { 
+            const loader = document.getElementById(loadingId);
+            if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi ke Danbo...</span>";
         }
+    }
 
-        function addDanboMessage(t) {
-            const b = document.getElementById('danbo-msg');
-            const p = document.createElement('p'); p.innerHTML = t;
-            b.appendChild(p); b.scrollTop = b.scrollHeight;
-        }
+    function addDanboMessage(t) { 
+        const b = document.getElementById('danbo-msg'); 
+        const p = document.createElement('p'); p.innerHTML = t; 
+        if(b) { b.appendChild(p); b.scrollTop = b.scrollHeight; }
+    }
 
-        // 4. Selesai Ujian & Grafik
-        function showResults() {
-            isFinished = true;
-            let benar = 0;
-            const stats = { "Kanji": {c:0, t:0}, "Bunpou": {c:0, t:0}, "Dokkai": {c:0, t:0} };
+    function openDanbo() { 
+        document.getElementById('chat-sidebar').classList.add('active'); 
+        document.body.classList.add('chat-open'); 
+    }
 
-            currentQuestions.forEach((q, i) => {
-                const corr = currentAnswers[i] === q.correct;
-                if(corr) benar++;
-                let key = q.categoryGroup.toLowerCase().includes('bunpou') ? "Bunpou" : q.categoryGroup.toLowerCase().includes('dokkai') ? "Dokkai" : "Kanji";
-                stats[key].t++; if(corr) stats[key].c++;
+    function closeDanbo() { 
+        document.getElementById('chat-sidebar').classList.remove('active'); 
+        document.body.classList.remove('chat-open'); 
+    }
 
-                document.querySelectorAll(`[id^="q${i}-o"]`).forEach((el, oIdx) => {
-                    if(oIdx === q.correct) el.classList.add('correct');
-                    else if(oIdx === currentAnswers[i]) el.classList.add('wrong');
-                });
+    function searchQuestions() {
+        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        currentQuestions.forEach((q) => {
+            const card = document.getElementById(`question-card-${q.originalIndex}`);
+            if (!card) return;
+            const content = (q.q + (q.embeddedText || "") + q.categoryGroup).toLowerCase();
+            card.style.display = content.includes(searchTerm) ? 'block' : 'none';
+        });
+    }
+
+    function showResults() {
+        if (currentAnswers.includes(null) && !confirm("Ada soal belum dijawab. Yakin?")) return;
+        isFinished = true;
+        totalBenar = 0;
+        const mainStats = { "Kanji": {c:0, t:0}, "Bunpou": {c:0, t:0}, "Dokkai": {c:0, t:0} };
+
+        currentQuestions.forEach((q, i) => {
+            const isCorrect = currentAnswers[i] === q.correct;
+            if (isCorrect) totalBenar++;
+            let catKey = q.categoryGroup.toLowerCase().includes('bunpou') ? "Bunpou" : 
+                         q.categoryGroup.toLowerCase().includes('dokkai') ? "Dokkai" : "Kanji";
+            mainStats[catKey].t++;
+            if(isCorrect) mainStats[catKey].c++;
+            
+            document.querySelectorAll(`[id^="q${i}-o"]`).forEach((el, oIdx) => {
+                el.classList.remove('selected');
+                if (oIdx === q.correct) el.classList.add('correct');
+                else if (oIdx === currentAnswers[i]) el.classList.add('wrong');
             });
+        });
 
-            document.getElementById('result-box').style.display = 'block';
-            document.getElementById('submit-btn').style.display = 'none';
-            document.getElementById('final-score').innerText = `Skor: ${benar} / ${totalSoal}`;
-            drawChart(Object.keys(stats), Object.keys(stats).map(k => stats[k].t ? Math.round(stats[k].c/stats[k].t*100) : 0));
-            openDanbo();
-            sendMessage(`Ujian selesai. Skor ${benar}/${totalSoal}. Berikan evaluasi singkat.`, true);
-        }
+        document.getElementById('result-box').style.display = 'block';
+        document.getElementById('submit-btn').style.display = 'none';
+        document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
+        
+        drawChart(Object.keys(mainStats), Object.keys(mainStats).map(l => mainStats[l].t ? Math.round((mainStats[l].c / mainStats[l].t) * 100) : 0));
+        openDanbo();
+        // Mengirim pesan otomatis setelah selesai ujian
+        sendMessage(`Sistem: Ujian Selesai. Saya benar ${totalBenar} dari ${totalSoal} soal. Berikan evaluasi.`, true);
+    }
 
-        function drawChart(labels, data) {
-            const ctx = document.getElementById('scoreChart').getContext('2d');
-            if(myRadarChart) myRadarChart.destroy();
-            myRadarChart = new Chart(ctx, {
-                type: 'radar',
-                data: { labels, datasets: [{ label: '% Penguasaan', data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: '#3498db' }] },
-                options: { scales: { r: { min: 0, max: 100 } } }
-            });
-        }
+    function drawChart(labels, dataPoin) {
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        if (myRadarChart) myRadarChart.destroy();
+        myRadarChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Penguasaan %',
+                    data: dataPoin,
+                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                    borderColor: '#3498db',
+                    borderWidth: 2
+                }]
+            },
+            options: { scales: { r: { min: 0, max: 100 } } }
+        });
+    }
 
-        function openDanbo() { document.getElementById('chat-sidebar').classList.add('active'); document.body.classList.add('chat-open'); }
-        function closeDanbo() { document.getElementById('chat-sidebar').classList.remove('active'); document.body.classList.remove('chat-open'); }
-        function showFolders() { document.getElementById('file-screen').classList.add('hidden'); document.getElementById('folder-screen').classList.remove('hidden'); }
-
-        window.onload = loadLevels;
-    </script>
+    window.onload = loadLevels;
+</script>
 </body>
 </html>
