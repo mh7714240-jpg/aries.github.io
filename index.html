@@ -127,6 +127,32 @@
     </div>
 
     <script>
+const mongoose = require('mongoose');
+
+// Schema untuk Riwayat Chat (Max 30)
+const chatSchema = new mongoose.Schema({
+    userId: { type: String, default: "default_user" }, // Bisa disesuaikan jika nanti ada sistem login
+    messages: [{
+        role: String,
+        content: String,
+        timestamp: { type: Date, default: Date.now }
+    }],
+    lastUpdated: { type: Date, default: Date.now }
+});
+
+// Schema untuk Analisis Kepribadian Mingguan
+const summarySchema = new mongoose.Schema({
+    userId: { type: String, default: "default_user" },
+    weeklySummary: String,
+    characteristics: Array,
+    generatedAt: { type: Date, default: Date.now }
+});
+
+const Chat = mongoose.model('Chat', chatSchema);
+const Summary = mongoose.model('Summary', summarySchema);
+
+module.exports = { Chat, Summary };
+        
     const BACKEND_URL = "https://web-backend-l5p7.onrender.com/danbo-chat"; 
     let currentQuestions = [];
     let currentAnswers = [];
