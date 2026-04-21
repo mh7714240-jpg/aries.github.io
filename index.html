@@ -26,8 +26,6 @@
 
         .question-card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 800px; margin-left: auto; margin-right: auto; }
         .reading-block { background: #fffbe6 !important; border-left: 5px solid #f1c40f; padding: 15px; margin-bottom: 15px; border-radius: 8px; font-size: 15px; line-height: 1.6; }
-        .q-image-container { background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px; text-align: center; }
-        .q-image { max-width: 100%; height: auto; border-radius: 4px; }
         
         .options-list { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
         .option-item { padding: 12px 15px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: 0.2s; }
@@ -91,7 +89,7 @@
     </div>
 
     <div id="chat-icon" onclick="openDanbo()">
-        <img src="assets/icon_chat.jpg" alt="Danbo Icon">
+        <img src="assets/icon_chat.jpg" alt="Danbo Icon" style="width: 100%; height: 100%; object-fit: cover;">
     </div>
 
     <div id="chat-sidebar">
@@ -114,10 +112,9 @@
         let isFinished = false;
         let chatHistory = [];
         let myRadarChart = null;
-        let imageFolderPath = "";
         let lastActiveIndex = null;
 
-        // 1. Load Levels (N3, dll)
+        // 1. Load Materi (Folder)
         async function loadLevels() {
             const container = document.getElementById('level-container');
             try {
@@ -134,7 +131,7 @@
             } catch (e) { container.innerHTML = "Gagal memuat manifest."; }
         }
 
-        // 2. Open Files (Berdasarkan Tahun dari Manifest)
+        // 2. Tampilkan File Berdasarkan Tahun
         function openLevelFiles(levelData) {
             document.getElementById('folder-screen').classList.add('hidden');
             document.getElementById('file-screen').classList.remove('hidden');
@@ -157,9 +154,8 @@
             });
         }
 
-        // 3. Start Exam
+        // 3. Mulai Ujian & Render Soal
         async function startExam(path, label) {
-            imageFolderPath = path.substring(0, path.lastIndexOf('/') + 1);
             document.getElementById('file-screen').classList.add('hidden');
             document.getElementById('exam-screen').style.display = 'flex';
             document.getElementById('chat-icon').style.display = 'block';
@@ -237,9 +233,11 @@
             });
         }
 
+        // --- FITUR UTAMA: CHAT DANBO (REVISI LENGKAP) ---
         async function sendMessage(overrideMsg = null, isAuto = false) {
             const input = document.getElementById('user-input');
             const msg = overrideMsg || input.value.trim();
+            
             if(!msg) return;
             if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`);
             if(input) input.value = '';
@@ -249,25 +247,49 @@
 
             let ctx = [];
             let target = lastActiveIndex;
-            const num = msg.match(/\d+/);
-            if(num) target = parseInt(num[0]) - 1;
 
+            // Deteksi nomor soal dari input user
+            const numMatch = msg.match(/\d+/);
+            if(numMatch) target = parseInt(numMatch[0]) - 1;
+
+            // Kirim data konteks soal yang relevan ke AI
             if(target !== null && currentQuestions[target]) {
                 const q = currentQuestions[target];
-                ctx.push({ nomor: target+1, pertanyaan: q.q, kunci: q.correct });
+                ctx.push({ 
+                    nomor: target + 1, 
+                    pertanyaan: q.q, 
+                    pilihan: q.options,
+                    kunci_jawaban: q.correct,
+                    bacaan: q.embeddedText || "",
+                    kategori: q.categoryGroup
+                });
             }
 
             try {
                 const res = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ userQuery: msg, currentQuestionContext: ctx, history: chatHistory })
+                    body: JSON.stringify({ 
+                        userQuery: msg, 
+                        currentQuestionContext: ctx, 
+                        history: chatHistory,
+                        status: isFinished ? "FINISHED" : "DURING_EXAM"
+                    })
                 });
+                
                 const data = await res.json();
-                document.getElementById(loadingId).remove();
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.remove();
+                
                 addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
                 chatHistory.push({ role: "user", content: msg }, { role: "assistant", content: data.reply });
-            } catch (e) { document.getElementById(loadingId).innerText = "Error koneksi."; }
+                
+                if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+                
+            } catch (e) { 
+                const loadingEl = document.getElementById(loadingId);
+                if (loadingEl) loadingEl.innerText = "Error koneksi ke Danbo."; 
+            }
         }
 
         function addDanboMessage(t) {
@@ -276,6 +298,7 @@
             b.appendChild(p); b.scrollTop = b.scrollHeight;
         }
 
+        // 4. Selesai Ujian & Grafik
         function showResults() {
             isFinished = true;
             let benar = 0;
@@ -298,7 +321,7 @@
             document.getElementById('final-score').innerText = `Skor: ${benar} / ${totalSoal}`;
             drawChart(Object.keys(stats), Object.keys(stats).map(k => stats[k].t ? Math.round(stats[k].c/stats[k].t*100) : 0));
             openDanbo();
-            sendMessage(`Ujian selesai. Skor ${benar}/${totalSoal}. Berikan evaluasi.`, true);
+            sendMessage(`Ujian selesai. Skor ${benar}/${totalSoal}. Berikan evaluasi singkat.`, true);
         }
 
         function drawChart(labels, data) {
@@ -306,7 +329,7 @@
             if(myRadarChart) myRadarChart.destroy();
             myRadarChart = new Chart(ctx, {
                 type: 'radar',
-                data: { labels, datasets: [{ label: '%', data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: '#3498db' }] },
+                data: { labels, datasets: [{ label: '% Penguasaan', data, backgroundColor: 'rgba(52, 152, 219, 0.2)', borderColor: '#3498db' }] },
                 options: { scales: { r: { min: 0, max: 100 } } }
             });
         }
