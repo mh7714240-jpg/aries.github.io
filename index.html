@@ -82,7 +82,47 @@
         #chat-icon { position: fixed; bottom: 20px; right: 20px; width: 75px; height: 75px; background: white; cursor: pointer; display: none; z-index: 1000; border-radius: 50%; border: 3px solid var(--accent); overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         #chat-sidebar { position: fixed; bottom: -35vh; left: 0; width: 100%; height: 33vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: 0.4s ease; z-index: 1001; }
         #chat-sidebar.active { bottom: 0; }
-        .chat-header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+        /* Update CSS di dalam <style> */
+
+.chat-header { 
+    background: var(--primary); 
+    color: white; 
+    padding: 10px 20px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+/* CSS BARU UNTUK TOMBOL KELINCI */
+.close-chat-btn {
+    width: 35px;  /* Membuatnya kotak */
+    height: 35px; /* Membuatnya kotak */
+    cursor: pointer;
+    overflow: hidden; /* Agar gambar tidak keluar kotak */
+    border-radius: 8px; /* Sudut agak melengkung sedikit */
+    transition: transform 0.2s ease-out; /* Transisi gerakan yang halus */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white; /* Memberi latar putih agar kelinci terlihat jelas */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.close-chat-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Agar gambar kelinci proporsional di dalam kotak */
+}
+
+/* EFEK BERGERAK SAAT DISENTUH MOUSE (PC) */
+.close-chat-btn:hover {
+    transform: translateY(-3px) scale(1.05); /* Sedikit naik dan membesar */
+}
+
+/* EFEK BERGERAK SAAT DITEKAN JARI (HP) */
+.close-chat-btn:active {
+    transform: translateY(1px) scale(0.98); /* Sedikit turun seperti membal */
+}
         #siera-msg { padding: 12px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 13px; }
         .chat-input-area { display: flex; padding: 8px; border-top: 1px solid #ddd; }
         #user-input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
@@ -139,17 +179,20 @@
         <img src="assets/icon_chat.jpg" alt="siera Icon" style="width: 100%; height: 100%; object-fit: cover;">
     </div>
 
-    <div id="chat-sidebar">
-        <div class="chat-header">
-            <span>siera AI Assistant</span>
-            <span onclick="closesiera()" style="cursor:pointer; font-weight:bold;">✖</span>
+   <div id="chat-sidebar">
+    <div class="chat-header">
+        <span>siera AI Assistant</span>
+        
+        <div class="close-chat-btn" onclick="closesiera()">
+            <img src="assets/kelinci tidur.jpeg" alt="Tutup siera">
         </div>
-        <div id="siera-msg"></div>
-        <div class="chat-input-area">
-            <input type="text" id="user-input" placeholder="Tanya siera..." onkeypress="if(event.key === 'Enter') sendMessage()">
-            <button id="send-btn" style="background:var(--accent); color:white; border:none; padding:0 15px; border-radius:15px; cursor:pointer;" onclick="sendMessage()">Kirim</button>
-        </div>
+    </div> <div id="siera-msg"></div>
+    
+    <div class="chat-input-area">
+        <input type="text" id="user-input" placeholder="Tanya siera..." onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button id="send-btn" style="background:var(--accent); color:white; border:none; padding:0 15px; border-radius:15px; cursor:pointer;" onclick="sendMessage()">Kirim</button>
     </div>
+</div> ```
 
     <script>
      // 1. GABUNGKAN SEMUA VARIABEL GLOBAL DI ATAS
