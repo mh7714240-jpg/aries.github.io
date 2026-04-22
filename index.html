@@ -392,10 +392,8 @@
     async function sendMessage(overrideMsg = null, isAuto = false) {
     const input = document.getElementById('user-input');
     const msg = overrideMsg || (input ? input.value.trim() : ""); 
-    
     if(!msg) return;
 
-    // AMBIL NAMA DARI VARIABEL GLOBAL ATAU LOCALSTORAGE
     let activeUser = currentUsername;
     if (!activeUser) {
         const savedData = localStorage.getItem('siera_user');
@@ -408,10 +406,9 @@
     const userDisplay = activeUser || "User Tamu";
     let contextSoal = "";
 
-    // Tambahkan instruksi tersembunyi agar AI tahu siapa yang sedang bicara
-    const hiddenIdentity = `\n(Sistem: User yang sedang bicara adalah ${userDisplay}. Gunakan nama ini jika perlu.)`;
+    // HANYA IDENTITAS: Biarkan Backend yang mengatur cara bicara
+    const systemIdentity = `\n(User: ${userDisplay}. JANGAN sebut nama ini kecuali ditanya.)`;
 
-    // LOGIKA PENCARIAN NOMOR SOAL
     const match = msg.match(/(\d+)/); 
     let targetIndex = null;
     if (match) {
@@ -422,12 +419,13 @@
 
     if (targetIndex !== null && currentQuestions[targetIndex]) {
         const qData = currentQuestions[targetIndex];
+        // Data soal dikirim tanpa kunci jawaban agar AI di Backend yang memutuskan boleh/tidaknya memberi jawaban
         contextSoal = `\n\n[KONTEKS SOAL NO ${targetIndex + 1}]:
 Pertanyaan: "${qData.q}"
 Pilihan: ${qData.options ? qData.options.join(", ") : "Tidak ada"}
-Jawaban Benar: Opsi ke-${qData.correct + 1}`;
+Kategori: ${qData.categoryGroup}`;
         
-        if (qData.embeddedText) contextSoal += `\nKonteks Bacaan: ${qData.embeddedText}`;
+        if (qData.embeddedText) contextSoal += `\nBacaan: ${qData.embeddedText}`;
     }
 
     if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
@@ -442,8 +440,7 @@ Jawaban Benar: Opsi ke-${qData.correct + 1}`;
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 username: userDisplay, 
-                // Kita gabungkan Pesan + Identitas + Konteks Soal
-                userQuery: msg + hiddenIdentity + contextSoal, 
+                userQuery: msg + systemIdentity + contextSoal, 
                 history: chatHistory,
                 status: isFinished ? "POST_EXAM" : "DURING_EXAM"
             })
