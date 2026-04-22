@@ -365,15 +365,29 @@
     
     if(!msg) return;
 
-    // Supaya tetap bisa chat walau belum login
     const activeUser = currentUsername || "User Tamu";
-
-    // CARA AGAR SIERA TAHU KONTEKS SOAL:
-    // Kita ambil data soal yang sedang aktif jika ada
     let contextSoal = "";
-    if (lastActiveIndex !== null && currentQuestions[lastActiveIndex]) {
-        const qData = currentQuestions[lastActiveIndex];
-        contextSoal = `\n\n(Konteks Soal Aktif: No. ${lastActiveIndex + 1}, Pertanyaan: "${qData.q}", Opsi: ${qData.options.join(", ")})`;
+
+    // --- LOGIKA PENCARIAN NOMOR SOAL OTOMATIS ---
+    // Mencari angka di dalam pesan kamu (misal: "jelaskan nomor 35")
+    const match = msg.match(/(\d+)/); 
+    if (match) {
+        const targetNumber = parseInt(match[1]); // Mengambil angka 35
+        const targetIndex = targetNumber - 1; // Karena index dimulai dari 0
+
+        // Cek apakah soal nomor tersebut ada di daftar soal yang sedang dibuka
+        if (currentQuestions[targetIndex]) {
+            const qData = currentQuestions[targetIndex];
+            contextSoal = `\n\n[USER BERTANYA TENTANG SOAL NO ${targetNumber}]:
+Pertanyaan: "${qData.q}"
+Pilihan: ${qData.options ? qData.options.join(", ") : "Tidak ada"}
+Jawaban Benar: Opsi ke-${qData.correct + 1}
+Kategori: ${qData.categoryGroup}`;
+            
+            if (qData.embeddedText) {
+                contextSoal += `\nKonteks Bacaan: ${qData.embeddedText}`;
+            }
+        }
     }
 
     if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
@@ -388,7 +402,7 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 username: activeUser, 
-                // Kita gabungkan pesan kamu dengan konteks soal agar AI tahu apa yang dibahas
+                // AI sekarang menerima pesan kamu + data soal nomor yang kamu sebut
                 userQuery: msg + contextSoal, 
                 history: chatHistory,
                 status: isFinished ? "POST_EXAM" : "DURING_EXAM"
@@ -401,7 +415,6 @@
         
         addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
         
-        // Simpan ke history (cukup simpan pesan asli kamu saja agar history tidak kepenuhan)
         chatHistory.push({ role: "user", content: msg });
         chatHistory.push({ role: "assistant", content: data.reply });
         if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
