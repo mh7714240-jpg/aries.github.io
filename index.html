@@ -242,15 +242,21 @@
         const userData = JSON.parse(savedData);
         const now = new Date().getTime();
 
-        // Cek apakah waktu sekarang masih di bawah waktu kedaluwarsa
         if (now < userData.expiry) {
             currentUsername = userData.username;
             container.style.display = "none";
-            console.log("Auto-login berhasil:", currentUsername);
+            
+            // TAMBAHKAN INI: Memberitahu siera secara otomatis saat refresh
+            console.log("Auto-login sukses untuk:", currentUsername);
+            
+            // Kirim pesan "silent" agar AI tahu siapa yang datang tanpa muncul di chat
+            // Kita gunakan isAuto = true agar tidak muncul bubble chat "Kamu: ..."
+            setTimeout(() => {
+                sendMessage(`(Sistem: User ${currentUsername} baru saja masuk kembali ke sesi.)`, true);
+            }, 1000); 
+
         } else {
-            // Jika sudah lewat 12 jam, hapus data lama
             localStorage.removeItem('siera_user');
-            console.log("Sesi berakhir, silakan login kembali.");
         }
     }
 }
