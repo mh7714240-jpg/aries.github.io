@@ -152,7 +152,9 @@
     </div>
 
     <script>
+     // 1. GABUNGKAN SEMUA VARIABEL GLOBAL DI ATAS
     const BACKEND_URL = "https://web-backend-l5p7.onrender.com/siera-chat"; 
+    let currentUsername = ""; 
     let currentQuestions = [];
     let currentAnswers = [];
     let totalSoal = 0;
@@ -162,26 +164,31 @@
     let myRadarChart = null;
     let imageFolderPath = "";
     let lastActiveIndex = null;
-
-    let currentUsername = "";
-
+    // 2. FUNGSI LOGIN
     function loginUser() {
-    const input = document.getElementById('username-input').value;
-    if (input.trim() !== "") {
-        currentUsername = input;
-        // Update tampilan kotak login menjadi status user
-        const container = document.getElementById('login-container');
-        container.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px;">
-                <div style="width:10px; height:10px; background:var(--success); border-radius:50%;"></div>
-                <span style="font-size:14px; color:var(--primary)">User: <strong>${currentUsername}</strong></span>
-            </div>
-        `;
-        console.log("Siera siap membantu:", currentUsername);
-    } else {
-        alert("Masukkan namamu dulu ya agar Siera bisa mencatat progresmu!");
+        const input = document.getElementById('username-input').value;
+        if (input.trim() !== "") {
+            currentUsername = input; // Simpan ke variabel global
+            
+            // Update tampilan UI
+            const container = document.getElementById('login-container');
+            container.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:10px; height:10px; background:var(--success); border-radius:50%;"></div>
+                    <span style="font-size:14px; color:var(--primary)">User: <strong>${currentUsername}</strong></span>
+                </div>
+            `;
+            
+            console.log("Siera siap membantu:", currentUsername);
+            
+            // OPSIONAL: Langsung sapa Siera otomatis saat login berhasil
+            addsieraMessage(`<strong>Sistem:</strong> Berhasil login sebagai ${currentUsername}`);
+            sendMessage(`Halo siera, saya ${currentUsername}. Saya siap belajar JLPT!`, true);
+
+        } else {
+            alert("Masukkan namamu dulu ya agar Siera bisa mencatat progresmu!");
+        }
     }
-}
         
         
         
@@ -311,75 +318,50 @@
 
     // --- REVISI UTAMA PADA FUNGSI SENDMESSAGE (SINKRON DENGAN BACKEND) ---
     async function sendMessage(overrideMsg = null, isAuto = false) {
-    const input = document.getElementById('user-input');
-    const msg = overrideMsg || (input ? input.value.trim() : ""); 
-    
-    if(!msg) return;
-
-    // VALIDASI LOGIN: Cek apakah user sudah login sebelum kirim pesan
-    if (!currentUsername) {
-        alert("Harap Log In terlebih dahulu di pojok kanan atas!");
-        return;
-    }
-
-    if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
-    if(input) input.value = '';
-
-    const loadingId = "load-" + Date.now();
-    addsieraMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
-
-    let selectedContext = [];
-    let targetIdx = lastActiveIndex;
-
-    // Cek jika user menyebut nomor soal tertentu dalam chat
-    const foundNumbers = msg.match(/\d+/g);
-    if(foundNumbers) {
-        targetIdx = parseInt(foundNumbers[0]) - 1;
-    }
-
-    // Siapkan data konteks soal
-    if(targetIdx !== null && currentQuestions[targetIdx]) {
-        const q = currentQuestions[targetIdx];
-        selectedContext.push({
-            nomor: targetIdx + 1,
-            pertanyaan: q.q,
-            pilihan: q.options || [],
-            kunci_jawaban: q.correct, 
-            bacaan: q.embeddedText || null
-        });
-    }
-
-    try {
-        // HANYA SATU FETCH KE BACKEND
-        const res = await fetch(BACKEND_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                username: currentUsername, // KIRIM USERNAME KE MONGODB
-                userQuery: msg, 
-                currentQuestionContext: selectedContext.length > 0 ? selectedContext : null,
-                status: isFinished ? "POST_EXAM" : "DURING_EXAM",
-                history: chatHistory
-            })
-        });
-
-        const data = await res.json();
-        const loader = document.getElementById(loadingId);
-        if(loader) loader.remove();
+        const input = document.getElementById('user-input');
+        const msg = overrideMsg || (input ? input.value.trim() : ""); 
         
-        addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
-        
-        // Simpan riwayat chat lokal
-        chatHistory.push({ role: "user", content: msg });
-        chatHistory.push({ role: "assistant", content: data.reply });
-        if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+        if(!msg) return;
 
-    } catch (e) { 
-        const loader = document.getElementById(loadingId);
-        if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi ke siera...</span>";
+        // Cek login
+        if (!currentUsername) {
+            alert("Harap Log In terlebih dahulu di pojok kanan atas!");
+            return;
+        }
+
+        if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
+        if(input) input.value = '';
+
+        const loadingId = "load-" + Date.now();
+        addsieraMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
+
+        try {
+            const res = await fetch(BACKEND_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    username: currentUsername, // DATA INI PENTING UNTUK MONGODB
+                    userQuery: msg, 
+                    history: chatHistory,
+                    status: isFinished ? "POST_EXAM" : "DURING_EXAM"
+                })
+            });
+
+            const data = await res.json();
+            const loader = document.getElementById(loadingId);
+            if(loader) loader.remove();
+            
+            addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
+            
+            chatHistory.push({ role: "user", content: msg });
+            chatHistory.push({ role: "assistant", content: data.reply });
+            if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+
+        } catch (e) { 
+            const loader = document.getElementById(loadingId);
+            if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi ke siera...</span>";
+        }
     }
-}
-
     function addsieraMessage(t) { 
         const b = document.getElementById('siera-msg'); 
         const p = document.createElement('p'); p.innerHTML = t; 
