@@ -209,30 +209,30 @@
     let lastActiveIndex = null;
     // 2. FUNGSI LOGIN
     function loginUser() {
-        const input = document.getElementById('username-input').value;
-        if (input.trim() !== "") {
-            currentUsername = input; // Simpan ke variabel global
-            
-            // Update tampilan UI
-            const container = document.getElementById('login-container');
-            container.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:10px; height:10px; background:var(--success); border-radius:50%;"></div>
-                    <span style="font-size:14px; color:var(--primary)">User: <strong>${currentUsername}</strong></span>
-                </div>
-            `;
-            
-            console.log("Siera siap membantu:", currentUsername);
-            
-            // OPSIONAL: Langsung sapa Siera otomatis saat login berhasil
-            addsieraMessage(`<strong>Sistem:</strong> Berhasil login sebagai ${currentUsername}`);
-            sendMessage(`Halo siera, saya ${currentUsername}. Saya siap belajar JLPT!`, true);
-
-        } else {
-            alert("Masukkan namamu dulu ya agar Siera bisa mencatat progresmu!");
-        }
-    }
+    const input = document.getElementById('username-input');
+    const container = document.getElementById('login-container');
+    
+    if (input.value.trim() !== "") {
+        currentUsername = input.value; // Simpan ke variabel global
         
+        // --- PROSES MENGHILANGKAN TAMPILAN ---
+        // Kita beri transisi sedikit agar halus sebelum benar-benar hilang
+        container.style.opacity = "0";
+        
+        setTimeout(() => {
+            container.style.display = "none"; // Benar-benar hilang dari layar
+        }, 300);
+
+        console.log("Siera siap membantu:", currentUsername);
+        
+        // Tetap kirim sapaan otomatis ke Siera
+        addsieraMessage(`<strong>Sistem:</strong> Berhasil login. Siera sekarang mengenali kamu.`);
+        sendMessage(`Halo siera, saya ${currentUsername}. Saya siap belajar JLPT!`, true);
+
+    } else {
+        alert("Masukkan namamu dulu ya agar Siera bisa mencatat progresmu!");
+    }
+}
         
         
         // --- FUNGSI LOAD & EXAM TETAP SAMA (DIPERTAHANKAN) ---
