@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danbo JLPT Learning System</title>
+    <title>siera JLPT Learning System</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f0f2f5; --success: #27ae60; --error: #e74c3c; }
@@ -41,7 +41,7 @@
         #chat-sidebar { position: fixed; bottom: -35vh; left: 0; width: 100%; height: 33vh; background: white; box-shadow: 0 -5px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; transition: 0.4s ease; z-index: 1001; }
         #chat-sidebar.active { bottom: 0; }
         .chat-header { background: var(--primary); color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        #danbo-msg { padding: 12px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 13px; }
+        #siera-msg { padding: 12px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 13px; }
         .chat-input-area { display: flex; padding: 8px; border-top: 1px solid #ddd; }
         #user-input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
         
@@ -88,24 +88,24 @@
         </div>
     </div>
 
-    <div id="chat-icon" onclick="openDanbo()">
-        <img src="assets/icon_chat.jpg" alt="Danbo Icon" style="width: 100%; height: 100%; object-fit: cover;">
+    <div id="chat-icon" onclick="opensiera()">
+        <img src="assets/icon_chat.jpg" alt="siera Icon" style="width: 100%; height: 100%; object-fit: cover;">
     </div>
 
     <div id="chat-sidebar">
         <div class="chat-header">
-            <span>Danbo AI Assistant</span>
-            <span onclick="closeDanbo()" style="cursor:pointer; font-weight:bold;">✖</span>
+            <span>siera AI Assistant</span>
+            <span onclick="closesiera()" style="cursor:pointer; font-weight:bold;">✖</span>
         </div>
-        <div id="danbo-msg"></div>
+        <div id="siera-msg"></div>
         <div class="chat-input-area">
-            <input type="text" id="user-input" placeholder="Tanya Danbo..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <input type="text" id="user-input" placeholder="Tanya siera..." onkeypress="if(event.key === 'Enter') sendMessage()">
             <button id="send-btn" style="background:var(--accent); color:white; border:none; padding:0 15px; border-radius:15px; cursor:pointer;" onclick="sendMessage()">Kirim</button>
         </div>
     </div>
 
     <script>
-    const BACKEND_URL = "https://web-backend-l5p7.onrender.com/danbo-chat"; 
+    const BACKEND_URL = "https://web-backend-l5p7.onrender.com/siera-chat"; 
     let currentQuestions = [];
     let currentAnswers = [];
     let totalSoal = 0;
@@ -246,11 +246,11 @@
         const msg = overrideMsg || (input ? input.value.trim() : ""); 
         
         if(!msg) return;
-        if(!isAuto) addDanboMessage(`<strong>Kamu:</strong> ${msg}`); 
+        if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
         if(input) input.value = '';
 
         const loadingId = "load-" + Date.now();
-        addDanboMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
+        addsieraMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
 
         let selectedContext = [];
         let targetIdx = lastActiveIndex;
@@ -289,7 +289,7 @@
             const data = await res.json();
             document.getElementById(loadingId).remove();
             
-            addDanboMessage(`<strong>Danbo:</strong> ${data.reply}`);
+            addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
             
             // Simpan riwayat agar AI ingat pembicaraan sebelumnya
             chatHistory.push({ role: "user", content: msg });
@@ -300,22 +300,22 @@
 
         } catch (e) { 
             const loader = document.getElementById(loadingId);
-            if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi ke Danbo...</span>";
+            if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi ke siera...</span>";
         }
     }
 
-    function addDanboMessage(t) { 
-        const b = document.getElementById('danbo-msg'); 
+    function addsieraMessage(t) { 
+        const b = document.getElementById('siera-msg'); 
         const p = document.createElement('p'); p.innerHTML = t; 
         if(b) { b.appendChild(p); b.scrollTop = b.scrollHeight; }
     }
 
-    function openDanbo() { 
+    function opensiera() { 
         document.getElementById('chat-sidebar').classList.add('active'); 
         document.body.classList.add('chat-open'); 
     }
 
-    function closeDanbo() { 
+    function closesiera() { 
         document.getElementById('chat-sidebar').classList.remove('active'); 
         document.body.classList.remove('chat-open'); 
     }
@@ -356,7 +356,7 @@
         document.getElementById('final-score').innerText = `Skor Akhir: ${totalBenar} / ${totalSoal}`;
         
         drawChart(Object.keys(mainStats), Object.keys(mainStats).map(l => mainStats[l].t ? Math.round((mainStats[l].c / mainStats[l].t) * 100) : 0));
-        openDanbo();
+        opensiera();
         // Mengirim pesan otomatis setelah selesai ujian
         sendMessage(`Sistem: Ujian Selesai. Saya benar ${totalBenar} dari ${totalSoal} soal. Berikan evaluasi.`, true);
     }
