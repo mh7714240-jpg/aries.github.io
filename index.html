@@ -1,6 +1,46 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+   /* Pastikan login bar terlihat rapi */
+#login-container {
+    position: fixed; /* Gunakan fixed agar tidak hilang saat scroll */
+    top: 15px;
+    right: 20px;
+    background: white;
+    padding: 10px 15px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--accent);
+}
+
+#username-input {
+    border: none;
+    outline: none;
+    background: #f0f2f5;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+}
+
+.login-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.login-btn:hover {
+    background: var(--primary);
+}
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>siera JLPT Learning System</title>
@@ -52,9 +92,9 @@
 </head>
 <body>
 
-    <div id="login-container" style="position: absolute; top: 10px; right: 10px; background: #f4f4f4; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000;">
-    <input type="text" id="username-input" placeholder="Masukkan Username" style="padding: 5px; border: 1px solid #ccc; border-radius: 3px;">
-    <button onclick="loginUser()" style="padding: 5px 10px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 3px;">Log In</button>
+    <div id="login-container">
+    <input type="text" id="username-input" placeholder="Siapa namamu?">
+    <button class="login-btn" onclick="loginUser()">Masuk</button>
 </div>
     
     <div id="folder-screen">
@@ -124,15 +164,22 @@
     let currentUsername = "";
 
     function loginUser() {
-        const input = document.getElementById('username-input').value;
-        if (input.trim() !== "") {
-            currentUsername = input;
-            document.getElementById('login-container').innerHTML = `<span>User: <strong>${currentUsername}</strong></span>`;
-            console.log("User logged in:", currentUsername);
-        } else {
-            alert("Silakan masukkan username!");
-        }
+    const input = document.getElementById('username-input').value;
+    if (input.trim() !== "") {
+        currentUsername = input;
+        // Update tampilan kotak login menjadi status user
+        const container = document.getElementById('login-container');
+        container.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:10px; height:10px; background:var(--success); border-radius:50%;"></div>
+                <span style="font-size:14px; color:var(--primary)">User: <strong>${currentUsername}</strong></span>
+            </div>
+        `;
+        console.log("Siera siap membantu:", currentUsername);
+    } else {
+        alert("Masukkan namamu dulu ya agar Siera bisa mencatat progresmu!");
     }
+}
         
         
         
