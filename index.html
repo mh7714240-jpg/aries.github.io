@@ -381,36 +381,64 @@ async function startExam(path, label) {
     document.getElementById('file-screen').classList.add('hidden');
     document.getElementById('exam-screen').style.display = 'flex';
     document.getElementById('exam-title-display').innerText = label;
-    document.getElementById('submit-btn').style.display = 'inline-block'; // Munculkan tombol skor
+    document.getElementById('submit-btn').style.display = 'inline-block';
 
     const area = document.getElementById('questions-area');
     area.innerHTML = 'Memuat data soal...';
+    window.scrollTo(0, 0); // Reset scroll ke paling atas
 
     try {
         const finalPath = path.startsWith('assets/') ? path : `assets/${path}`;
         const res = await fetch(finalPath);
         if (!res.ok) throw new Error("File tidak ditemukan");
         const data = await res.json();
+        
         area.innerHTML = '';
         currentQuestions = [];
 
-        Object.keys(data).forEach(cat => {
-            if (Array.isArray(data[cat])) {
+        // --- REVISI: Tentukan urutan kategori secara manual agar tidak acak ---
+        const order = ["kanji", "bunpou", "dokkai"];
+        
+        order.forEach(cat => {
+            if (data[cat] && Array.isArray(data[cat])) {
                 data[cat].forEach(item => {
-                    if (item.questions) {
+                    // 1. FORMAT DOKKAI (Ada sub-questions)
+                    if (item.questions && Array.isArray(item.questions)) {
                         item.questions.forEach(subQ => {
                             const qIndex = currentQuestions.length;
-                            currentQuestions.push({ ...subQ, categoryGroup: cat, embeddedText: item.text, sectionTitle: item.section_title, image: item.image || subQ.image, originalIndex: qIndex });
+                            currentQuestions.push({ 
+                                ...subQ, 
+                                categoryGroup: cat, 
+                                embeddedText: item.text || null, 
+                                sectionTitle: item.section_title || null, 
+                                image: item.image || subQ.image || null, 
+                                originalIndex: qIndex 
+                            });
                             renderSingleQuestion(currentQuestions[qIndex], qIndex, area);
                         });
+                    } 
+                    // 2. FORMAT KANJI/BUNPOU (Soal langsung)
+                    else if (item.q) {
+                        const qIndex = currentQuestions.length;
+                        currentQuestions.push({ 
+                            ...item, 
+                            categoryGroup: cat, 
+                            originalIndex: qIndex 
+                        });
+                        renderSingleQuestion(currentQuestions[qIndex], qIndex, area);
                     }
                 });
             }
         });
+
         totalSoal = currentQuestions.length;
         currentAnswers = new Array(totalSoal).fill(null);
         isFinished = false;
-    } catch (e) { area.innerHTML = `<p style='color:red;'>Gagal memuat: ${e.message}</p>`; }
+        updateStatus(); // Update indikator progres jika ada
+
+    } catch (e) { 
+        area.innerHTML = `<p style='color:red;'>Gagal memuat: ${e.message}</p>`; 
+    }
 }
 
 function renderSingleQuestion(q, i, container) {
