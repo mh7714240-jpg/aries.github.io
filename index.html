@@ -325,6 +325,34 @@ function checkAutoLogin() {
     updateWidgetVisibility(); // Pastikan panggil ini
 }
 
+function createFileItem(label, path, levelName, container) {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+    
+    // Ikon file
+    const icon = document.createElement('span');
+    icon.innerText = '📄 ';
+    
+    const text = document.createElement('span');
+    text.innerText = label;
+    
+    item.appendChild(icon);
+    item.appendChild(text);
+    
+    // Fungsi saat file soal diklik
+    item.onclick = () => {
+        // Ganti dengan fungsi yang kamu gunakan untuk membuka soal (misal: startExam atau loadQuiz)
+        if (typeof startExam === "function") {
+            startExam(path, label, levelName);
+        } else {
+            console.log("Membuka file:", path);
+            alert("Membuka: " + label);
+        }
+    };
+    
+    container.appendChild(item);
+}
+        
 function openLevelFiles(levelData) {
     document.getElementById('folder-screen').classList.add('hidden');
     document.getElementById('file-screen').classList.remove('hidden');
