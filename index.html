@@ -431,15 +431,15 @@ function openLevelFiles(levelData) {
     area.innerHTML = 'Memuat data soal...';
 
     try {
-        // Cek apakah path sudah mengandung 'assets/'
-        const finalPath = path.startsWith('assets/') ? path : `assets/${path}`;
-        
-        const res = await fetch(finalPath);
-        
-        // Proteksi jika file tidak ada
-        if (!res.ok) throw new Error(`File tidak ditemukan di: ${finalPath}`);
+            // Logika ini sangat penting:
+            // Jika path di manifest tidak ada kata 'assets/', kodingan akan otomatis menambahkannya.
+            const finalPath = path.startsWith('assets/') ? path : `assets/${path}`;
+            
+            const res = await fetch(finalPath);
+            
+            if (!res.ok) throw new Error(`File tidak ditemukan di jalur: ${finalPath}`);
 
-        const data = await res.json();
+            const data = await res.json();
         area.innerHTML = ''; 
         currentQuestions = [];
         
