@@ -631,55 +631,65 @@ function openLevelFiles(levelData) {
 
     // HANYA IDENTITAS: Biarkan Backend yang mengatur cara bicara
    async function sendMessage(overrideMsg = null, isAuto = false) {
-    const input = document.getElementById('user-input');
-    const msg = overrideMsg || (input ? input.value.trim() : ""); 
-    if(!msg) return;
+        const input = document.getElementById('user-input');
+        const msg = overrideMsg || (input ? input.value.trim() : ""); 
+        if(!msg) return;
 
-    // 1. Ambil data nama dari localStorage (paling akurat)
-    const savedData = localStorage.getItem('siera_user');
-    const nameFromStorage = savedData ? JSON.parse(savedData).username : "User Tamu";
-    
-    // 2. Buat identitas sistem untuk dikirim ke AI
-    // Saya sarankan tidak memakai "JANGAN sebut nama" agar AI lebih luwes
-    const identityPrompt = `\n(Konteks: Nama pengguna adalah ${nameFromStorage}. Sapa atau sebut nama ini jika relevan.)`;
-
-    let contextSoal = "";
-    // ... (logika targetIndex dan contextSoal kamu tetap sama seperti sebelumnya) ...
-
-    if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
-    if(input) input.value = '';
-
-    const loadingId = "load-" + Date.now();
-    addsieraMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
-
-    try {
-        const res = await fetch(BACKEND_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-                username: nameFromStorage, // Menggunakan nama yang fresh
-                // GABUNGKAN msg + identityPrompt + contextSoal di sini
-                userQuery: msg + identityPrompt + contextSoal, 
-                history: chatHistory,
-                status: isFinished ? "POST_EXAM" : "DURING_EXAM"
-            })
-        });
-
-        const data = await res.json();
-        const loader = document.getElementById(loadingId);
-        if(loader) loader.remove();
+        // AMBIL NAMA DARI LOCALSTORAGE ATAU VARIABEL GLOBAL
+        const savedData = localStorage.getItem('siera_user');
+        const activeUserName = savedData ? JSON.parse(savedData).username : (currentUsername || "User Tamu");
         
-        addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
-        
-        chatHistory.push({ role: "user", content: msg });
-        chatHistory.push({ role: "assistant", content: data.reply });
-        if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+        // Buat instruksi agar siera tahu siapa kamu
+        const identityPrompt = `\n(Konteks: Nama pengguna adalah ${activeUserName}. Sapa atau gunakan nama ini jika dia bertanya siapa dirinya.)`;
 
-    } catch (e) { 
-        const loader = document.getElementById(loadingId);
-        if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi...</span>";
+        let contextSoal = "";
+        // Logika mencari konteks soal berdasarkan nomor
+        const match = msg.match(/(\d+)/); 
+        let targetIndex = null;
+        if (match) {
+            targetIndex = parseInt(match[1]) - 1;
+        } else if (lastActiveIndex !== null && msg.toLowerCase().includes("ini")) {
+            targetIndex = lastActiveIndex; 
+        }
+
+        if (targetIndex !== null && currentQuestions[targetIndex]) {
+            const qData = currentQuestions[targetIndex];
+            contextSoal = `\n\n[KONTEKS SOAL NO ${targetIndex + 1}]:\nQ: "${qData.q}"\nCat: ${qData.categoryGroup}`;
+        }
+
+        if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
+        if(input) input.value = '';
+
+        const loadingId = "load-" + Date.now();
+        addsieraMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
+
+        try {
+            const res = await fetch(BACKEND_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    username: activeUserName, 
+                    userQuery: msg + identityPrompt + contextSoal, 
+                    history: chatHistory,
+                    status: isFinished ? "POST_EXAM" : "DURING_EXAM"
+                })
+            });
+
+            const data = await res.json();
+            const loader = document.getElementById(loadingId);
+            if(loader) loader.remove();
+            
+            addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
+            
+            chatHistory.push({ role: "user", content: msg });
+            chatHistory.push({ role: "assistant", content: data.reply });
+            if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
+
+        } catch (e) { 
+            const loader = document.getElementById(loadingId);
+            if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi...</span>";
+        }
     }
-}
     function addsieraMessage(t) { 
         const b = document.getElementById('siera-msg'); 
         const p = document.createElement('p'); p.innerHTML = t; 
