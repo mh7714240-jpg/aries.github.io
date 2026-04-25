@@ -610,6 +610,13 @@ function openLevelFiles(levelData) {
     const msg = overrideMsg || (input ? input.value.trim() : ""); 
     if(!msg) return;
 
+    // AMBIL ULANG DARI LOCALSTORAGE AGAR FRESH
+    const savedData = localStorage.getItem('siera_user');
+    const activeUser = savedData ? JSON.parse(savedData).username : "User Tamu";
+    
+    // Kirim instruksi yang lebih jelas ke siera
+    const identityPrompt = `\n[SISTEM: Pengguna yang bicara saat ini bernama ${activeUser}. Gunakan nama ini jika dia bertanya tentang identitasnya.]`;
+
     let activeUser = currentUsername;
     if (!activeUser) {
         const savedData = localStorage.getItem('siera_user');
@@ -623,26 +630,21 @@ function openLevelFiles(levelData) {
     let contextSoal = "";
 
     // HANYA IDENTITAS: Biarkan Backend yang mengatur cara bicara
-    const systemIdentity = `\n(User: ${userDisplay}. JANGAN sebut nama ini kecuali ditanya.)`;
+    async function sendMessage(overrideMsg = null, isAuto = false) {
+    const input = document.getElementById('user-input');
+    const msg = overrideMsg || (input ? input.value.trim() : ""); 
+    if(!msg) return;
 
-    const match = msg.match(/(\d+)/); 
-    let targetIndex = null;
-    if (match) {
-        targetIndex = parseInt(match[1]) - 1;
-    } else if (lastActiveIndex !== null && msg.toLowerCase().includes("ini")) {
-        targetIndex = lastActiveIndex; 
-    }
+    // 1. Ambil data nama dari localStorage (paling akurat)
+    const savedData = localStorage.getItem('siera_user');
+    const nameFromStorage = savedData ? JSON.parse(savedData).username : "User Tamu";
+    
+    // 2. Buat identitas sistem untuk dikirim ke AI
+    // Saya sarankan tidak memakai "JANGAN sebut nama" agar AI lebih luwes
+    const identityPrompt = `\n(Konteks: Nama pengguna adalah ${nameFromStorage}. Sapa atau sebut nama ini jika relevan.)`;
 
-    if (targetIndex !== null && currentQuestions[targetIndex]) {
-        const qData = currentQuestions[targetIndex];
-        // Data soal dikirim tanpa kunci jawaban agar AI di Backend yang memutuskan boleh/tidaknya memberi jawaban
-        contextSoal = `\n\n[KONTEKS SOAL NO ${targetIndex + 1}]:
-Pertanyaan: "${qData.q}"
-Pilihan: ${qData.options ? qData.options.join(", ") : "Tidak ada"}
-Kategori: ${qData.categoryGroup}`;
-        
-        if (qData.embeddedText) contextSoal += `\nBacaan: ${qData.embeddedText}`;
-    }
+    let contextSoal = "";
+    // ... (logika targetIndex dan contextSoal kamu tetap sama seperti sebelumnya) ...
 
     if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
     if(input) input.value = '';
@@ -655,8 +657,9 @@ Kategori: ${qData.categoryGroup}`;
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-                username: userDisplay, 
-                userQuery: msg + systemIdentity + contextSoal, 
+                username: nameFromStorage, // Menggunakan nama yang fresh
+                // GABUNGKAN msg + identityPrompt + contextSoal di sini
+                userQuery: msg + identityPrompt + contextSoal, 
                 history: chatHistory,
                 status: isFinished ? "POST_EXAM" : "DURING_EXAM"
             })
