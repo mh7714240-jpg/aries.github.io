@@ -630,7 +630,7 @@ function openLevelFiles(levelData) {
     let contextSoal = "";
 
     // HANYA IDENTITAS: Biarkan Backend yang mengatur cara bicara
-    async function sendMessage(overrideMsg = null, isAuto = false) {
+   async function sendMessage(overrideMsg = null, isAuto = false) {
     const input = document.getElementById('user-input');
     const msg = overrideMsg || (input ? input.value.trim() : ""); 
     if(!msg) return;
