@@ -624,55 +624,71 @@
     // 7. CHAT SYSTEM (SIERA)
     // ==========================================
     async function sendMessage(overrideMsg = null, isAuto = false) {
-        const input = document.getElementById('user-input');
-        const msg = overrideMsg || (input ? input.value.trim() : ""); 
-        if(!msg) return;
+    const input = document.getElementById('user-input');
+    const msg = overrideMsg || (input ? input.value.trim() : ""); 
+    if(!msg) return;
 
-        const userName = currentUsername || "User";
-        const identityPrompt = `\n(Konteks: Nama pengguna adalah ${userName})`;
-
-        let contextSoal = "";
-        const match = msg.match(/(\d+)/); 
-        let targetIndex = null;
-        if (match) targetIndex = parseInt(match[1]) - 1;
-        else if (lastActiveIndex !== null && msg.toLowerCase().includes("ini")) targetIndex = lastActiveIndex;
-
-        if (targetIndex !== null && currentQuestions[targetIndex]) {
-            const qData = currentQuestions[targetIndex];
-            contextSoal = `\n\n[KONTEKS SOAL NO ${targetIndex + 1}]:\nQ: "${qData.q}"\nCat: ${qData.categoryGroup}`;
-        }
-
-        if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
-        if(input) input.value = '';
-
-        const loadingId = "load-" + Date.now();
-        addsieraMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
-
-        try {
-            const res = await fetch(CHAT_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    username: userName, 
-                    userQuery: msg + identityPrompt + contextSoal, 
-                    history: chatHistory,
-                    status: isFinished ? "POST_EXAM" : "DURING_EXAM"
-                })
-            });
-
-            const data = await res.json();
-            const loader = document.getElementById(loadingId);
-            if(loader) loader.remove();
-            
-            addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
-            chatHistory.push({ role: "user", content: msg }, { role: "assistant", content: data.reply });
-            if(chatHistory.length > 10) chatHistory = chatHistory.slice(-10);
-
-        } catch (e) { 
-            const loader = document.getElementById(loadingId);
-            if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi...</span>";
-        }
+    // Ambil identitas dari localStorage (untuk dikirim ke backend)
+    const savedData = localStorage.getItem('siera_user');
+    const userName = savedData ? JSON.parse(savedData).username : (currentUsername || "User Tamu");
+    
+    let contextSoal = "";
+    
+    // Deteksi nomor soal yang sedang dibahas
+    const match = msg.match(/(\d+)/); 
+    let targetIndex = null;
+    if (match) {
+        targetIndex = parseInt(match[1]) - 1;
+    } else if (lastActiveIndex !== null && msg.toLowerCase().includes("ini")) {
+        targetIndex = lastActiveIndex; 
     }
+
+    // --- PENGIRIMAN DATA MURNI (TANPA PROMPT) ---
+    if (targetIndex !== null && currentQuestions[targetIndex]) {
+        const qData = currentQuestions[targetIndex];
+        
+        // Mengonversi array opsi menjadi string yang rapi
+        const opsiTeks = qData.options 
+            ? qData.options.map((opt, idx) => `${idx + 1}. ${opt}`).join(", ") 
+            : "Tidak ada opsi";
+
+        // Menyusun data teknis soal
+        contextSoal = ` | Konteks Soal No: ${targetIndex + 1} | Pertanyaan: ${qData.q} | Opsi: [${opsiTeks}] | Kategori: ${qData.categoryGroup}`;
+    }
+
+    if(!isAuto) addsieraMessage(`<strong>Kamu:</strong> ${msg}`); 
+    if(input) input.value = '';
+
+    const loadingId = "load-" + Date.now();
+    addsieraMessage(`<div id="${loadingId}"><img src="assets/kon.gif" style="width: 60px;"></div>`);
+
+    try {
+        const res = await fetch(BACKEND_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                username: userName, 
+                userQuery: msg + contextSoal, // Menggabungkan pesan user dengan data soal
+                history: chatHistory
+            })
+        });
+
+        const data = await res.json();
+        const loader = document.getElementById(loadingId);
+        if(loader) loader.remove();
+        
+        addsieraMessage(`<strong>siera:</strong> ${data.reply}`);
+        
+        // Simpan history chat
+        chatHistory.push({ role: "user", content: msg });
+        chatHistory.push({ role: "assistant", content: data.reply });
+        if(chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+
+    } catch (e) { 
+        const loader = document.getElementById(loadingId);
+        if(loader) loader.innerHTML = "<span style='color:red;'>Gagal koneksi...</span>";
+    }
+}
 
     function addsieraMessage(t) { 
         const b = document.getElementById('siera-msg'); 
