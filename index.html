@@ -225,10 +225,10 @@
     // ==========================================
     // 1. GLOBAL CONFIGURATION & STATE
     // ==========================================
-    const BASE_URL = "https://web-backend-l5p7.onrender.com"; 
+    const BASE_URL = "https://web-backend-l5p7.onrender.com";
     const CHAT_URL = `${BASE_URL}/siera-chat`;
     const SAVE_EXAM_URL = `${BASE_URL}/save-exam`;
-    const HISTORY_URL = `${BASE_URL}/exam-history`; 
+    const HISTORY_URL = `${BASE_URL}/exam-history`;
     
     let currentUsername = ""; 
     let currentQuestions = [];
@@ -624,60 +624,54 @@
         viewExamHistory();
     }
 
-    async function viewExamHistory() {
-        const container = document.getElementById('file-container');
-        const title = document.getElementById('folder-title');
-        
-        if (!currentUsername) {
-            container.innerHTML = '<p style="text-align:center; padding:20px;">Silakan login terlebih dahulu.</p>';
+   async function viewExamHistory() {
+    const container = document.getElementById('file-container');
+    const title = document.getElementById('folder-title');
+    
+    if (!currentUsername) {
+        alert("Login dulu ya!");
+        return;
+    }
+
+    // Tampilkan screen file jika sedang di screen folder
+    document.getElementById('folder-screen').classList.add('hidden');
+    document.getElementById('file-screen').classList.remove('hidden');
+
+    title.innerText = "📜 Riwayat Ujian: " + currentUsername;
+    container.innerHTML = '<div class="loading">Mengambil riwayat...</div>';
+
+    try {
+        const res = await fetch(`${HISTORY_URL}?username=${currentUsername}`);
+        const data = await res.json();
+
+        console.log("Data Riwayat:", data); // Cek di console browser (F12)
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p style="padding:20px;">Belum ada riwayat ujian.</p>';
             return;
         }
 
-        title.innerText = "📜 Log Riwayat Ujian";
-        container.innerHTML = '<div style="text-align:center; padding:20px;">Menghubungkan ke server...</div>';
-
-        try {
-            const res = await fetch(`${HISTORY_URL}?username=${currentUsername}`);
-            const data = await res.json();
-
-            if (!data || data.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align:center; padding:20px;">
-                        <p>Belum ada rekaman ujian untuk akun ini.</p>
-                        <button onclick="showFolders()" style="background:var(--primary); color:white; border:none; padding:10px; border-radius:5px;">Kembali</button>
-                    </div>`;
-                return;
-            }
-
-            container.innerHTML = ''; 
-            data.forEach(log => {
-                const card = document.createElement('div');
-                card.className = 'file-item'; 
-                card.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-left:4px solid var(--primary); padding-left:15px; background:#fff;";
-                const date = new Date(log.date).toLocaleDateString('id-ID');
-                
-                card.innerHTML = `
-                    <div>
-                        <div style="font-weight:bold; color:#2c3e50;">${log.exam_name}</div>
-                        <small style="color:#7f8c8d;">📅 ${date}</small>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:1.1em; font-weight:bold; color:var(--accent);">${log.score}</div>
-                        <small style="font-size:0.7em; color:gray;">SKOR</small>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-
-            const backBtn = document.createElement('div');
-            backBtn.innerHTML = `<button onclick="showFolders()" style="width:100%; margin-top:20px; padding:10px; border:none; background:#ecf0f1; border-radius:8px; cursor:pointer;">⬅ Kembali ke Daftar Materi</button>`;
-            container.appendChild(backBtn);
-            updateWidgetVisibility();
-        } catch (e) {
-            container.innerHTML = '<p style="color:red; text-align:center; padding:20px;">Gagal memuat data server.</p>';
-        }
+        container.innerHTML = ''; 
+        data.forEach(log => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.style.display = 'flex';
+            item.style.justifyContent = 'space-between';
+            
+            const tgl = new Date(log.date).toLocaleDateString('id-ID');
+            item.innerHTML = `
+                <div>
+                    <strong>${log.exam_name}</strong><br>
+                    <small>${tgl}</small>
+                </div>
+                <div style="color:var(--accent); font-weight:bold;">${log.score}</div>
+            `;
+            container.appendChild(item);
+        });
+    } catch (e) {
+        container.innerHTML = '<p style="color:red;">Gagal terhubung ke server backend.</p>';
     }
-
+}
     // ==========================================
     // 8. SIERA CHAT SYSTEM
     // ==========================================
