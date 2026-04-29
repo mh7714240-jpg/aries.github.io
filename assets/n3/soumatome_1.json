@@ -1,0 +1,33 @@
+{
+  "levels": [
+    {
+      "name": "Soumatome N3 Grammar",
+      "week": 1,
+      "day": 1,
+      "header": {
+        "main_title": "がんばらなくちゃ！",
+        "sub_title": "ぼくにもやらせて",
+        "translation": "Let me do it"
+      },
+      "illustration_text": {
+        "child": "ぼくにもやらせて。",
+        "mother": "けがをされると困るからダメよ。"
+      },
+      "grammar_sections": [
+        {
+          "pattern_title": "書かれている",
+          "description_box": {
+            "formula": "Vれる <受身形>",
+            "explanation": "主語を表さないで事実を述べるとき、よく受身形を使う。",
+            "explanation_en": "When you mention a fact without a subject, the passive form is often used."
+          },
+          "examples": [
+            {
+              "jp": "この本には、くわしい説明は書かれていません。",
+              "en": "There is no detailed explanation in this book."
+            },
+            {
+              "jp": "入学式は、このホールで行われます。",
+              "en": "The entrance ceremony will take place in this hall."
+            }
+          ]
