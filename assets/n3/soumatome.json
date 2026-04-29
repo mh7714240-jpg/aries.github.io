@@ -19,7 +19,7 @@
           "description_box": {
             "formula": "Vれる <受身形>",
             "explanation": "Materi: Kalimat Pasif (V-reru / 受身形).",
-            "explanation_en": "Materi ini menjelaskan penggunaan bentuk pasif ketika kita ingin menyatakan sebuah fakta atau peristiwa tanpa harus menyebutkan subjeknya secara spesifik. Poin Utama: Bentuk pasif sering digunakan untuk menyatakan fakta umum."
+            "explanation_en": "Digunakan untuk menyatakan fakta umum tanpa menyebutkan subjek spesifik."
           },
           "examples": [
             {
@@ -31,16 +31,46 @@
               "jp": "入学式は、このホールで行われます。",
               "en": "Upacara penerimaan siswa baru diadakan di aula ini.",
               "explanation": "Pihak sekolah mengadakan upacara tersebut di aula ini."
+            }
+          ]
+        },
+        {
+          "pattern_title": "赤子に泣かれた",
+          "description_box": {
+            "formula": "Vれる (Nuisance Passive)",
+            "explanation": "Menyatakan bahwa seseorang merasa terganggu atau berada dalam situasi sulit akibat perbuatan orang lain.",
+            "explanation_en": "Digunakan untuk menunjukkan keadaan sulit (Adversative Passive). Sering dipasangkan dengan ~shimatta."
+          },
+          "examples": [
+            {
+              "jp": "友達の赤子を抱っこしたら, 泣かれてしまった。",
+              "en": "Saat aku menggendong bayi teman, bayi itu menangis (dan aku jadi bingung).",
+              "explanation": ""
             },
             {
-              "jp": "これは、世界でいちばん大きいダイヤモンドだと言われています。",
-              "en": "Ini dikatakan sebagai berlian terbesar di dunia.",
-              "explanation": "Orang-orang (siapa saja) mengatakan bahwa ini adalah berlian terbesar."
+              "jp": "雨に降られて, 服がぬれてしまった。",
+              "en": "Aku kehujanan, dan bajuku jadi basah kuyup (situasi menyusahkan).",
+              "explanation": ""
+            }
+          ]
+        },
+        {
+          "pattern_title": "早く帰らせてください",
+          "description_box": {
+            "formula": "$$\\text{V(さ)せて}\\begin{cases} \\text{ください} \\\\ \\text{もらえますか} \\\\ \\text{もらえませんか} \\end{cases}$$",
+            "explanation": "Menyatakan permohonan izin kepada orang lain.",
+            "explanation_en": "Ekspresi yang digunakan ketika ingin meminta izin agar kita diperbolehkan melakukan sesuatu."
+          },
+          "examples": [
+            {
+              "jp": "ちょっと気分が悪いので, 早く帰らせてください。",
+              "en": "Karena kurang enak badan, tolong izinkan saya pulang lebih awal.",
+              "explanation": ""
             },
             {
-              "jp": "昔は、その考えが正しいと思われていた。",
-              "en": "Dahulu, pemikiran itu dianggap (oleh orang-orang) benar.",
-              "explanation": "Orang-orang zaman dulu berpikir bahwa pemikiran tersebut benar."
+              "jp": "手を洗わせてください。",
+              "en": "Izinkan saya mencuci tangan.",
+              "explanation": ""
             }
           ]
         }
