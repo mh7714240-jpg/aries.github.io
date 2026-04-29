@@ -89,7 +89,6 @@
             z-index: 2000;
         }
 
-
         /* Screen Navigation */
         #folder-screen, #file-screen { 
             padding: 50px; 
@@ -170,97 +169,56 @@
             flex: none; 
         }
 
-        /* Card Elements */
-        .question-card, .grammar-card, .material-header-card { 
+        .question-card { 
             background: white; 
             padding: 20px; 
-            margin: 0 auto 25px auto; 
+            margin-bottom: 25px; 
             border-radius: 10px; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
             max-width: 800px; 
-            text-align: left;
+            margin-left: auto; 
+            margin-right: auto; 
         }
 
-        .material-header-card { background: #f9f9f9; }
-
-        .reading-block, .illustration-box { 
+        .reading-block { 
             background: #fffbe6 !important; 
             border-left: 5px solid #f1c40f; 
             padding: 15px; 
-            margin: 15px 0; 
+            margin-bottom: 15px; 
             border-radius: 8px; 
             font-size: 15px; 
             line-height: 1.6; 
         }
-
-        .pattern-title {
-            background: var(--accent); 
-            color: white; 
-            display: inline-block; 
-            padding: 5px 15px; 
-            border-radius: 20px; 
-            font-size: 16px; 
-            margin-top: 0;
-        }
-
-        /* MathJax & Formula Styling */
-        .formula-box {
-            background: #f8f9fa; 
-            padding: 15px; 
-            border-radius: 6px; 
-            margin: 15px 0; 
-            border: 1px dashed #cbd5e0;
-        }
-
-        .math-render {
-            padding: 15px 0;
-            font-size: 1.25em; /* Memperbesar tampilan rumus */
-            overflow-x: auto;
-            display: block;
-            color: #2c3e50;
-        }
-
-        /* Options & Examples */
-        .options-list, .example-list { 
+        
+        .options-list { 
             margin-top: 15px; 
             display: flex; 
             flex-direction: column; 
             gap: 10px; 
-            list-style: none;
-            padding: 0;
         }
 
-        .option-item, .example-list li { 
+        .option-item { 
             padding: 12px 15px; 
             border: 2px solid #ddd; 
             border-radius: 8px; 
+            cursor: pointer; 
             transition: 0.2s; 
         }
 
-        .example-list li {
-            border: none;
-            border-left: 3px solid var(--accent);
-            background: #fdfdfd;
+        .option-item.selected { 
+            background: #e3f2fd; 
+            border-color: var(--accent); 
         }
 
-        .option-item.selected { background: #e3f2fd; border-color: var(--accent); }
-        .option-item.correct { background: var(--success) !important; color: white !important; }
-        .option-item.wrong { background: var(--error) !important; color: white !important; }
-
-        .tip-box {
-            margin-top: 8px; 
-            font-size: 0.85em; 
-            color: #27ae60; 
-            background: #ebfef2; 
-            padding: 5px 10px; 
-            border-radius: 4px; 
-            border-left: 2px solid #2ecc71;
+        .option-item.correct { 
+            background: var(--success) !important; 
+            color: white !important; 
         }
 
-        /* Result & Chart */
-        .btn-finish { background: var(--success); color: white; padding: 15px 40px; border: none; border-radius: 30px; font-size: 18px; cursor: pointer; margin: 20px 0; }
-        #result-box { display: none; margin: 30px auto; padding: 20px; background: white; border-radius: 10px; border: 2px solid var(--success); max-width: 800px; }
-        .chart-container { max-width: 450px; margin: 20px auto; }
+        .option-item.wrong { 
+            background: var(--error) !important; 
+            color: white !important; 
+        }
 
         /* Chat Sidebar & Interaction */
         #chat-icon { 
@@ -293,7 +251,9 @@
             z-index: 1001; 
         }
 
-        #chat-sidebar.active { bottom: 0; }
+        #chat-sidebar.active { 
+            bottom: 0; 
+        }
 
         .chat-header { 
             background: var(--primary); 
@@ -315,19 +275,61 @@
             align-items: center;
             justify-content: center;
             background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        .close-chat-btn img { width: 100%; height: 100%; object-fit: cover; }
-        .close-chat-btn:hover { transform: translateY(-3px) scale(1.05); }
+        .close-chat-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-        #siera-msg { padding: 12px; overflow-y: auto; flex: 1; background: #f9f9f9; font-size: 13px; }
-        .chat-input-area { display: flex; padding: 8px; border-top: 1px solid #ddd; }
-        #user-input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
+        .close-chat-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+        }
+
+        #siera-msg { 
+            padding: 12px; 
+            overflow-y: auto; 
+            flex: 1; 
+            background: #f9f9f9; 
+            font-size: 13px; 
+        }
+
+        .chat-input-area { 
+            display: flex; 
+            padding: 8px; 
+            border-top: 1px solid #ddd; 
+        }
+
+        #user-input { 
+            flex: 1; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 20px; 
+            outline: none; 
+        }
         
-        /* Search & Helpers */
-        .search-container { background: white; padding: 10px 20px; border-bottom: 1px solid #ddd; display: flex; justify-content: center; margin-bottom: 20px; }
-        #search-input { width: 100%; max-width: 400px; padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; }
-        .hidden { display: none !important; }
+        .search-container { 
+            background: white; 
+            padding: 10px 20px; 
+            border-bottom: 1px solid #ddd; 
+            display: flex; 
+            justify-content: center; 
+            margin-bottom: 20px; 
+        }
+
+        #search-input { 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            border: 1px solid #ccc; 
+        }
+
+        .hidden { 
+            display: none !important; 
+        }
     </style>
 </head>
 <body>
@@ -577,73 +579,69 @@
     // 4. FULL SOUMATOME MATERIAL MODE
     // ==========================================
     async function showGrammarMaterial(path) {
-    try {
-        const response = await fetch(`assets/${path}`);
-        const data = await response.json();
-        const content = data.levels[0]; 
+        try {
+            const response = await fetch(`assets/${path}`);
+            const data = await response.json();
+            const content = data.levels[0]; 
 
-        document.getElementById('file-screen').classList.add('hidden');
-        document.getElementById('exam-screen').style.display = 'flex';
-        document.getElementById('chat-icon').style.display = 'block';
-        document.getElementById('exam-title-display').innerText = content.header.main_title;
-        document.getElementById('progress-indicator').innerText = "Mode Belajar Materi";
+            document.getElementById('file-screen').classList.add('hidden');
+            document.getElementById('exam-screen').style.display = 'flex';
+            document.getElementById('chat-icon').style.display = 'block';
+            document.getElementById('exam-title-display').innerText = content.header.main_title;
+            document.getElementById('progress-indicator').innerText = "Mode Belajar Materi";
 
-        let html = `
-            <div class="material-header-card">
-                <h2>${content.header.main_title}</h2>
-                <p class="sub-title">
-                    ${content.header.sub_title} <span>(${content.header.translation})</span>
-                </p>
-                <div class="illustration-box">
-                    <p><strong>👦 (Child):</strong> ${content.illustration_text.child}</p>
-                    <p><strong>👩 (Mother):</strong> ${content.illustration_text.mother}</p>
-                </div>
-            </div>
-        `;
-
-        content.grammar_sections.forEach(sec => {
-            html += `
-                <div class="grammar-card">
-                    <h3 class="pattern-title">${sec.pattern_title}</h3>
-                    <div class="formula-box">
-                        <strong>Formula:</strong>
-                        <div class="math-render">${sec.description_box.formula}</div>
-                        <p class="explanation-text">${sec.description_box.explanation_en}</p>
+            let html = `
+                <div style="text-align: left; background: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <h2 style="color: #2c3e50; margin-top: 0;">${content.header.main_title}</h2>
+                    <p style="font-size: 1.1em; color: #3498db; font-weight: bold;">
+                        ${content.header.sub_title} <span style="color: #7f8c8d; font-weight: normal;">(${content.header.translation})</span>
+                    </p>
+                    <div style="background: #fffbe6; padding: 15px; border-left: 5px solid #f1c40f; border-radius: 4px;">
+                        <p><strong>👦 (Child):</strong> ${content.illustration_text.child}</p>
+                        <p><strong>👩 (Mother):</strong> ${content.illustration_text.mother}</p>
                     </div>
-                    <p><b>Contoh Kalimat:</b></p>
-                    <ul class="example-list">
-                        ${sec.examples.map(ex => `
-                            <li>
-                                <div class="jp-text">${ex.jp}</div>
-                                <div class="en-text">${ex.en}</div>
-                                ${ex.explanation ? `
-                                    <div class="tip-box">
-                                        <strong>💡 Penjelasan:</strong> ${ex.explanation}
-                                    </div>
-                                ` : ''}
-                            </li>
-                        `).join('')}
-                    </ul>
                 </div>
             `;
-        });
 
-        const area = document.getElementById('questions-area');
-        area.innerHTML = html;
+            content.grammar_sections.forEach(sec => {
+    html += `
+        <div style="text-align: left; border: 1px solid #e0e0e0; padding: 20px; border-radius: 10px; margin-bottom: 20px; background: white;">
+            <h3 style="background: #3498db; color: white; display: inline-block; padding: 5px 15px; border-radius: 20px; font-size: 16px; margin-top:0;">
+                ${sec.pattern_title}
+            </h3>
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 15px 0; border: 1px dashed #cbd5e0;">
+                <p style="margin: 5px 0;"><strong>Formula:</strong> <code>${sec.description_box.formula}</code></p>
+                <p style="margin: 5px 0; font-size: 0.95em; color: #4a5568;">${sec.description_box.explanation_en}</p>
+            </div>
+            <p><b>Contoh Kalimat:</b></p>
+            <ul style="list-style: none; padding: 0;">
+                ${sec.examples.map(ex => `
+                    <li style="margin-bottom: 12px; padding: 10px; background: #fdfdfd; border-radius: 6px; border-left: 3px solid #3498db; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div style="font-size: 1.1em; margin-bottom: 4px;">${ex.jp}</div>
+                        <div style="font-size: 0.9em; color: #718096; font-style: italic;">${ex.en}</div>
+                        
+                        ${ex.explanation ? `
+                            <div style="margin-top: 8px; font-size: 0.85em; color: #27ae60; background: #ebfef2; padding: 5px 10px; border-radius: 4px; border-left: 2px solid #2ecc71;">
+                                <strong>💡 Penjelasan:</strong> ${ex.explanation}
+                            </div>
+                        ` : ''}
+                    </li>
+                `).join('')}
+            </ul>
+        </div>
+    `;
+});
 
-        // KRUSIAL: Panggil MathJax setelah HTML masuk ke DOM
-        if (window.MathJax && window.MathJax.typeset) {
-            window.MathJax.typeset();
-        }
-
-        document.getElementById('submit-btn').style.display = 'none';
-        document.getElementById('result-box').style.display = 'none';
-        updateWidgetVisibility();
-    } catch (error) { 
-        console.error(error);
-        alert("Gagal memuat materi."); 
-    }
+            const area = document.getElementById('questions-area');
+            area.innerHTML = html;
+           if (window.MathJax && window.MathJax.typeset) {
+    window.MathJax.typeset();
 }
+            document.getElementById('submit-btn').style.display = 'none';
+            document.getElementById('result-box').style.display = 'none';
+            updateWidgetVisibility();
+        } catch (error) { alert("Gagal memuat materi."); }
+    }
 
     // ==========================================
     // 5. FULL EXAM ENGINE (QUIZ)
