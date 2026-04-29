@@ -57,7 +57,7 @@
         {
           "pattern_title": "早く帰らせてください",
           "description_box": {
-            "formula": "$$ \\text{V(さ)せて} \\begin{cases} \\text{ください} \\\\\\\\ \\text{もらえますか} \\\\\\\\ \\text{もらえませんか} \\end{cases} $$"",
+            "formula": "$$ \\text{V(さ)せて} \\begin{cases} \\text{ください} \\\\\\\\ \\text{もらえますか} \\\\\\\\ \\text{もらえませんか} \\end{cases} $$",
             "explanation": "Menyatakan permohonan izin kepada orang lain.",
             "explanation_en": "Ekspresi yang digunakan ketika ingin meminta izin agar kita diperbolehkan melakukan sesuatu."
           },
